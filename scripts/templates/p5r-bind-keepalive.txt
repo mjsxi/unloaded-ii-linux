@@ -1,0 +1,1 @@
+This inert file keeps Persona Essentials' CriFs bind list non-empty under Proton.

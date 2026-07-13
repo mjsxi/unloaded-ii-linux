@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+dist/
+*.user
+
+# Vendor clones are reference material, not committed
+vendor/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# claude
+.claude
+
+# Generated state from test installs
+**/reloaded-dropin/generated/
+**/reloaded-dropin/logs/
+**/reloaded-dropin/backups/
+
+# Test artifacts
+TestResults/
+research/target-frameworks.txt
+logs/
+
+# User-generated diagnostic bundles
+dropin-diagnostics/
+dropin-diagnostics.zip

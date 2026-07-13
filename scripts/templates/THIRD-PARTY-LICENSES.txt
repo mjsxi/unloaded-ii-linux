@@ -1,0 +1,135 @@
+Unloaded-II (Reloaded Drop-In) — third-party notices
+=====================================================
+
+This package redistributes the components listed in the first section below.
+The corresponding full license texts are in licenses/ (GPL-3.0.txt,
+LGPL-3.0.txt, and MIT.txt). Reloaded-II's complete upstream license bundle is
+preserved as licenses/Reloaded-II-LICENSES.txt, and the .NET runtime's own
+notices remain at reloaded-dropin/runtime/ThirdPartyNotices.txt.
+
+The exact packaged versions are recorded in reloaded-dropin/version.json and
+each bundled mod's ModConfig.json or .deps.json file.
+
+
+REDISTRIBUTED IN THIS PACKAGE
+-----------------------------
+
+Microsoft .NET Runtime and Windows Desktop Runtime
+  Location: reloaded-dropin/runtime/
+  Copyright: .NET Foundation and contributors
+  License: MIT
+  Source: https://github.com/dotnet/runtime
+
+Reloaded-II Mod Loader
+  Location: reloaded-dropin/loader/
+  Copyright: Sewer56 and contributors
+  License: GPL-3.0
+  Source: https://github.com/Reloaded-Project/Reloaded-II
+  Its complete upstream dependency notices and license texts are included
+  verbatim in licenses/Reloaded-II-LICENSES.txt.
+
+Ultimate ASI Loader
+  Location: the proxy DLL in the game directory (for example, winmm.dll)
+  Copyright (c) 2023 ThirteenAG
+  License: MIT
+  Source: https://github.com/ThirteenAG/Ultimate-ASI-Loader
+
+Overlay graphics and interop components
+  Location: mods/_base-mods/reloaded.dropin.overlay/
+
+  Dear ImGui
+    Copyright (c) 2014-2022 Omar Cornut
+    License: MIT — https://github.com/ocornut/imgui
+
+  cimgui
+    Copyright (c) 2015 Stephan Dilly
+    License: MIT — https://github.com/cimgui/cimgui
+
+  DearImguiSharp 1.88.3
+    Author: Sewer56
+    License: MIT — https://www.nuget.org/packages/DearImguiSharp/1.88.3
+
+  CppSharp.Runtime (distributed by DearImguiSharp)
+    Copyright (c) 2016 João Matos, Dimitar Dobrev
+    License: MIT — https://github.com/mono/CppSharp
+
+  Reloaded.Imgui.Hook 4.0.1
+    Author: Sewer56
+    License: LGPL-3.0-only
+    Source: https://github.com/Sewer56/Reloaded.Imgui.Hook
+
+  Reloaded.Imgui.Hook.Direct3D11 1.0.2
+    Copyright (c) 2020 Sewer56
+    License: MIT
+    Source: https://github.com/Sewer56/Reloaded.Imgui.Hook/tree/c3a42c84536c0a8480bc5667cb891afae274f5a7/Reloaded.Imgui.Hook.Direct3D11
+
+  Reloaded.Hooks.Definitions 1.11.0
+    Author: Sewer56
+    License: LGPL-3.0
+    Source: https://github.com/Reloaded-Project/Reloaded.Hooks
+
+  SharpDX, SharpDX.DXGI, and SharpDX.Direct3D11 4.2.0
+    Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
+    License: MIT — https://github.com/sharpdx/SharpDX
+
+SharpCompress 1.0.0
+  Location: reloaded-dropin/bootstrap/
+  Copyright (c) 2014 Adam Hathcock
+  License: MIT — https://github.com/adamhathcock/sharpcompress
+
+Unloaded-II drop-in
+  Components: reloaded-dropin.asi, managed bootstrap, adapters, and overlay
+  License: GPL-3.0
+  Source: https://github.com/mjsxi/unloaded-ii-linux
+
+
+DOWNLOADED ON FIRST LAUNCH — NOT REDISTRIBUTED
+-----------------------------------------------
+
+The following required base mods are not included in this archive. Unloaded-II
+downloads release assets directly from the authors' official GitHub
+repositories. They remain under their respective upstream licenses.
+
+Granblue Fantasy: Relink
+  gbfrelink.utility.manager
+    License: MIT
+    Source: https://github.com/WistfulHopes/gbfrelink.utility.manager
+
+  Reloaded.Memory.SigScan.ReloadedII
+    License: LGPL-3.0
+    Source: https://github.com/Reloaded-Project/Reloaded.Memory.SigScan
+
+  reloaded.sharedlib.hooks
+    License: LGPL-3.0
+    Source: https://github.com/Sewer56/Reloaded.SharedLib.Hooks.ReloadedII
+
+  reloaded.universal.redirector
+    License: GPL-3.0
+    Source: https://github.com/Reloaded-Project/reloaded.universal.redirector
+
+Persona 5 Royal
+  p5rpc.modloader
+    License: GPL-3.0
+    Source: https://github.com/Sewer56/p5rpc.modloader
+
+  reloaded.sharedlib.hooks
+    License: LGPL-3.0
+    Source: https://github.com/Sewer56/Reloaded.SharedLib.Hooks.ReloadedII
+
+  Reloaded.Memory.SigScan.ReloadedII
+    License: LGPL-3.0
+    Source: https://github.com/Reloaded-Project/Reloaded.Memory.SigScan
+
+  crifs.v2.hook and CriFs.V2.Hook.Awb
+    License: LGPL-3.0
+    Source: https://github.com/Sewer56/CriFs.V2.Hook.ReloadedII
+
+  reloaded.universal.fileemulationframework and its AWB, PAK, BMD, BF, and
+  SPD emulators
+    License: LGPL-3.0
+    Source: https://github.com/Sewer56/FileEmulationFramework
+
+  Reloaded.Universal.Localisation.Framework and its Steam and Windows
+  providers
+    License: GPL-3.0
+    Source: https://github.com/AnimatedSwine37/Reloaded.Universal.Localisation.Framework

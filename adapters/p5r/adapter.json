@@ -1,0 +1,34 @@
+{
+  "id": "p5r",
+  "displayName": "Persona 5 Royal",
+  "steamAppIds": [1687950],
+  "executables": [
+    "P5R.exe"
+  ],
+  "platforms": [
+    "windows",
+    "linux-proton"
+  ],
+  "injection": {
+    "preferredProxy": "winmm.dll",
+    "wineOverride": "winmm=n,b",
+    "note": "winmm verified to load the base stack and overlay under Proton"
+  },
+  "requiredMods": [
+    { "id": "p5rpc.modloader", "enabled": true },
+    { "id": "reloaded.sharedlib.hooks", "enabled": false },
+    { "id": "Reloaded.Memory.SigScan.ReloadedII", "enabled": false },
+    { "id": "crifs.v2.hook", "enabled": false },
+    { "id": "CriFs.V2.Hook.Awb", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework.awb", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework.pak", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework.bmd", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework.bf", "enabled": false },
+    { "id": "reloaded.universal.fileemulationframework.spd", "enabled": false },
+    { "id": "Reloaded.Universal.Localisation.Framework", "enabled": false },
+    { "id": "Reloaded.Universal.Localisation.Provider.Steam", "enabled": false },
+    { "id": "Reloaded.Universal.Localisation.Provider.Windows", "enabled": false }
+  ],
+  "backups": []
+}

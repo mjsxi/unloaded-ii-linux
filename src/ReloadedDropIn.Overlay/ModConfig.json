@@ -1,0 +1,29 @@
+{
+  "ModId": "reloaded.dropin.overlay",
+  "ModName": "Reloaded Drop-In Overlay",
+  "ModAuthor": "Reloaded Drop-In",
+  "ModVersion": "0.3.0",
+  "ModDescription": "In-game overlay (INSERT): list mods, toggle them, edit their settings.",
+  "ModDll": "ReloadedDropIn.Overlay.dll",
+  "ModIcon": "",
+  "ModR2RManagedDll32": "",
+  "ModR2RManagedDll64": "",
+  "ModNativeDll32": "",
+  "ModNativeDll64": "",
+  "Tags": [],
+  "CanUnload": false,
+  "HasExports": false,
+  "IsLibrary": false,
+  "IsUniversalMod": false,
+  "ModDependencies": [
+    "reloaded.sharedlib.hooks"
+  ],
+  "OptionalDependencies": [],
+  "SupportedAppId": [
+    "granblue_fantasy_relink.exe",
+    "granblue_fantasy_relink_endless_ragnarok_beta_test.exe",
+    "granblue_fantasy_relink_endless_ragnarok_demo.exe",
+    "p5r.exe"
+  ],
+  "ProjectUrl": ""
+}

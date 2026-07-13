@@ -1,0 +1,25 @@
+{
+  "id": "gbfr",
+  "displayName": "Granblue Fantasy: Relink",
+  "steamAppIds": [881020],
+  "executables": [
+    "granblue_fantasy_relink.exe"
+  ],
+  "platforms": [
+    "windows",
+    "linux-proton"
+  ],
+  "injection": {
+    "preferredProxy": "winmm.dll",
+    "wineOverride": "winmm=n,b"
+  },
+  "requiredMods": [
+    { "id": "gbfrelink.utility.manager", "bundled": true, "enabled": true },
+    { "id": "Reloaded.Memory.SigScan.ReloadedII", "bundled": true, "enabled": false },
+    { "id": "reloaded.sharedlib.hooks", "bundled": true, "enabled": false },
+    { "id": "reloaded.universal.redirector", "bundled": true, "enabled": false }
+  ],
+  "backups": [
+    "data.i"
+  ]
+}

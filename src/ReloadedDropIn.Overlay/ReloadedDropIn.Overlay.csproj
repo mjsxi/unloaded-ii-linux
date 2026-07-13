@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Windows-only by nature: runs inside the game process (under Wine on Linux).
+         net9.0-windows is required to consume the net5.0-windows imgui packages. -->
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- Loaded by Reloaded-II as a mod; needs deps.json alongside. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Reloaded.Mod.Interfaces" Version="2.5.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Reloaded.SharedLib.Hooks" Version="1.9.0" ExcludeAssets="runtime" />
+    <PackageReference Include="Reloaded.Imgui.Hook.Direct3D11" Version="1.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReloadedDropIn.Core\ReloadedDropIn.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ModConfig.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

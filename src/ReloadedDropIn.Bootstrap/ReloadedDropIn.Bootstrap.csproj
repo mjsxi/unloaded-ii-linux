@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReloadedDropIn.Core\ReloadedDropIn.Core.csproj" />
+    <ProjectReference Include="..\ReloadedDropIn.Adapter.Abstractions\ReloadedDropIn.Adapter.Abstractions.csproj" />
+    <ProjectReference Include="..\ReloadedDropIn.Adapter.GBFR\ReloadedDropIn.Adapter.GBFR.csproj" />
+    <ProjectReference Include="..\ReloadedDropIn.Adapter.P5R\ReloadedDropIn.Adapter.P5R.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Bundled-mod auto-update: GitHub releases ship .7z archives. -->
+    <PackageReference Include="SharpCompress" Version="1.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Loaded as a component by hostfxr from the native .asi; needs its own runtimeconfig + deps.json. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+
+</Project>
