@@ -1,0 +1,25 @@
+{
+  "id": "ffxvi",
+  "displayName": "Final Fantasy XVI",
+  "steamAppIds": [2515020],
+  "executables": [
+    "ffxvi.exe",
+    "ffxvi_demo.exe"
+  ],
+  "platforms": [
+    "windows",
+    "linux-proton"
+  ],
+  "injection": {
+    "preferredProxy": "winmm.dll",
+    "wineOverride": "winmm=n,b",
+    "note": "unverified on hardware; fall back to dinput8.dll if ffxvi.exe does not import winmm"
+  },
+  "requiredMods": [
+    { "id": "ff16.utility.modloader", "enabled": true },
+    { "id": "reloaded.sharedlib.hooks", "enabled": false },
+    { "id": "Reloaded.Memory.SigScan.ReloadedII", "enabled": false }
+  ],
+  "backups": [],
+  "notes": "ff16.utility.modloader rebuilds additive data/*.diff.pac archives each modded launch; originals are never modified. The adapter clears .diff.pac files when the mod set changes and on restore/uninstall."
+}

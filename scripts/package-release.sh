@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Assembles a Reloaded Drop-In package.
+# Assembles THE Reloaded Drop-In package — one universal zip for every
+# supported game. The bootstrap detects which game it was extracted into at
+# launch (all game adapters ship in every package), so nothing game-specific
+# is decided at packaging time.
 #
-# Usage: ./scripts/package-release.sh [game]     (game: gbfr | p5r; default gbfr)
-# Game-specific facts live in scripts/games/<game>.sh.
+# Usage: ./scripts/package-release.sh
 #
 # Output layout (extract into the game directory):
 #   <game proxy>.dll        Ultimate ASI Loader (override with PROXY_NAME)
@@ -23,20 +25,18 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="$HOME/.dotnet:$PATH"
 
-GAME="${1:-gbfr}"
-[ -f "$ROOT/scripts/games/$GAME.sh" ] || { echo "unknown game '$GAME' (no scripts/games/$GAME.sh)"; exit 1; }
-# shellcheck source=/dev/null
-source "$ROOT/scripts/games/$GAME.sh"
-
 # Single source of truth for the drop-in version: the VERSION file at repo
 # root. It flows into version.json, which the overlay watermark reads.
 DROPIN_VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION")"
 RELOADED_VERSION="1.30.2"
-PROXY_NAME="${PROXY_NAME:-$DEFAULT_PROXY}"
+# All supported games deliberately share the winmm proxy and launch option;
+# override (PROXY_NAME=dinput8.dll) only to build an experimental variant for
+# a game whose exe turns out not to import winmm.
+PROXY_NAME="${PROXY_NAME:-winmm.dll}"
 VENDOR="$ROOT/vendor/reloaded-release"
-STAGE="$ROOT/dist/dropin-$GAME_ID"
-PACKAGE="$ROOT/dist/unloaded-ii-$GAME_ID-$DROPIN_VERSION.zip"
-echo "==> packaging for $GAME_NAME ($GAME_ID), proxy $PROXY_NAME"
+STAGE="$ROOT/dist/dropin"
+PACKAGE="$ROOT/dist/unloaded-ii-$DROPIN_VERSION.zip"
+echo "==> packaging universal drop-in, proxy $PROXY_NAME"
 
 echo "==> checking inputs"
 [ -f "$VENDOR/extracted/Loader/X64/Reloaded.Mod.Loader.dll" ] || {
@@ -121,12 +121,11 @@ find "$STAGE/mods/_base-mods/reloaded.dropin.overlay/runtimes" \
 # CriFs asks Persona Essentials for a newline-separated bind list. With no user
 # CPK files that list is empty; P5R's native binder does not tolerate the empty
 # call under Proton. Keep one uniquely named, inert entry in the overlay so the
-# list is valid on a clean install and remains valid after the last mod is removed.
-if [ "$GAME_ID" = "p5r" ]; then
-  KEEPALIVE_DIR="$STAGE/mods/_base-mods/reloaded.dropin.overlay/P5REssentials/CPK/unloaded_ii"
-  mkdir -p "$KEEPALIVE_DIR"
-  cp "$ROOT/scripts/templates/p5r-bind-keepalive.txt" "$KEEPALIVE_DIR/bind_keepalive.txt"
-fi
+# list is valid on a clean install and remains valid after the last mod is
+# removed. Only CriFs (P5R) ever reads this path — inert for the other games.
+KEEPALIVE_DIR="$STAGE/mods/_base-mods/reloaded.dropin.overlay/P5REssentials/CPK/unloaded_ii"
+mkdir -p "$KEEPALIVE_DIR"
+cp "$ROOT/scripts/templates/p5r-bind-keepalive.txt" "$KEEPALIVE_DIR/bind_keepalive.txt"
 
 cat > "$STAGE/mods/PUT_MODS_HERE.txt" <<'EOF'
 Drop downloaded mod archives (.zip/.7z/.rar) or extracted Reloaded-II mod
@@ -139,7 +138,7 @@ leave it alone. Everything else in here is yours to add and remove.
 EOF
 
 echo "==> user-facing docs, uninstaller, version metadata"
-cp "$ROOT/scripts/templates/$README_TEMPLATE" "$STAGE/README.txt"
+cp "$ROOT/scripts/templates/README.txt" "$STAGE/README.txt"
 cp "$ROOT/scripts/templates/THIRD-PARTY-LICENSES.txt" "$STAGE/THIRD-PARTY-LICENSES.txt"
 cp -R "$ROOT/scripts/templates/licenses" "$STAGE/licenses"
 cp "$VENDOR/extracted/LICENSE.txt" "$STAGE/licenses/Reloaded-II-LICENSES.txt"
@@ -155,7 +154,7 @@ printf '%s\n' "$PROXY_NAME" > "$STAGE/.dropin-proxy-name"
 cat > "$STAGE/reloaded-dropin/version.json" <<EOF
 {
   "dropin": "$DROPIN_VERSION",
-  "adapter": "$GAME_ID",
+  "adapter": "auto",
   "reloaded": "$RELOADED_VERSION",
   "proxy": "$PROXY_NAME",
   "built": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -22,10 +22,15 @@ mod cannot leave generated output active.
 
 ## Supported games
 
-| Game | Steam App ID | Package | Status |
-|---|---|---|---|
-| Granblue Fantasy: Relink | 881020 | `./scripts/package-release.sh gbfr` | verified on hardware, tested with some mods |
-| Persona 5 Royal | 1687950 | `./scripts/package-release.sh p5r` | verified on hardware, tested with some mods |
+One universal package (`./scripts/package-release.sh`) covers every supported
+game — extract it into any of these game directories and the drop-in detects
+which game it's in at launch:
+
+| Game | Steam App ID | Status |
+|---|---|---|
+| Granblue Fantasy: Relink | 881020 | verified on hardware, tested with some mods |
+| Persona 5 Royal | 1687950 | verified on hardware, tested with some mods |
+| Final Fantasy XVI | 2515020 | built, not yet verified on hardware |
 
 ### Game support
 
@@ -37,7 +42,8 @@ and implement it. Pull requests are welcome if you'd like to contribute your
 work back to the community.
 
 Adding a game = one `IGameAdapter` implementation naming its executable and
-required mod stack, plus a small `scripts/games/<id>.sh` packaging config.
+required mod stack, registered in the bootstrap's adapter list — the single
+universal package then covers it automatically.
 Games whose modding works through runtime file redirection (like P5R) need
 nothing else; games with unhookable I/O (like Relink) implement extra
 file-work hooks. See [docs/multi-game-next-steps.md](docs/multi-game-next-steps.md).
@@ -70,7 +76,7 @@ src/
   ReloadedDropIn.Tests/
   native/dropin-asi/                    the .asi bootstrap (C, mingw)
 adapters/                               declarative adapter metadata per game
-scripts/                                package-release.sh + per-game configs, diagnostics collector
+scripts/                                package-release.sh (one universal zip), diagnostics collector
 research/                               config reverse-engineering notes
 ```
 
@@ -79,7 +85,7 @@ research/                               config reverse-engineering notes
 ```bash
 dotnet build
 dotnet test
-./scripts/package-release.sh <game>   # gbfr | p5r; needs x86_64-w64-mingw32-gcc, 7zz, vendor/ inputs (see script)
+./scripts/package-release.sh   # one universal zip; needs x86_64-w64-mingw32-gcc, 7zz, vendor/ inputs (see script)
 ```
 
 The release version lives in the `VERSION` file — one place, flows everywhere.

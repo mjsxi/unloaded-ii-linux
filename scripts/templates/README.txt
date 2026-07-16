@@ -1,0 +1,115 @@
+Unloaded-II (Reloaded Drop-In)
+==============================
+Drag-and-drop mod loading. No mod manager to run — ever.
+
+One package for every supported game — it detects which game you put it
+in on launch:
+
+  - Granblue Fantasy: Relink
+  - Persona 5 Royal
+  - Final Fantasy XVI
+
+INSTALL (Linux / Steam Deck / Proton)
+-------------------------------------
+1. Extract this archive into the game directory, next to the game's
+   executable (granblue_fantasy_relink.exe / P5R.exe / ffxvi.exe).
+   You should end up with:
+
+     <the game's .exe>
+     winmm.dll                <- from this archive
+     reloaded-dropin.asi      <- from this archive
+     reloaded-dropin/         <- from this archive
+     mods/                    <- from this archive
+     uninstall.sh             <- from this archive
+
+2. In Steam: right-click the game -> Properties -> Launch Options:
+
+     WINEDLLOVERRIDES="winmm=n,b" %command%
+
+3. Press Play. That's the whole install. The same launch option works
+   for every supported game.
+
+The first launch needs internet access once: the required base mods
+(your game's mod loader and its libraries) are not redistributed in
+this package — they are downloaded directly from their authors'
+official GitHub releases, so you always start on the latest versions.
+
+ADDING MODS
+-----------
+Drop downloaded mod archives (.zip/.7z/.rar) or extracted Reloaded-II
+mod folders into mods/. They load automatically on the next launch.
+Remove a mod (or toggle it off in the overlay) to disable it.
+
+mods/_base-mods/ holds the required base mods — leave that folder alone;
+everything else in mods/ is yours.
+
+IN-GAME OVERLAY
+---------------
+Press INSERT in-game to open the mod panel: see your mods, switch them
+on/off, and edit their settings. Changes apply on the next game launch.
+
+PER-GAME NOTES
+--------------
+Granblue Fantasy: Relink — the game reads its archives through
+unhookable I/O, so the drop-in rewrites the data.i archive index and
+mirrors mod files into data/ while the game starts (originals are
+backed up first and restored by uninstall.sh). Mod conversion caches
+are cleared automatically when your mod set changes.
+
+Persona 5 Royal — mods are served entirely at runtime through CriFs
+redirection; no game file is ever modified. Persona Essentials'
+disposable merge cache is cleared automatically when your mod set
+changes.
+
+Final Fantasy XVI — the mod loader packages your active mods as
+additive *.diff.pac archives in the game's data/ folder and rebuilds
+them every launch. Original game files are never modified, and the
+drop-in clears the generated archives whenever your mod set changes,
+so a removed mod can never leave stale content behind.
+
+BASE MODS: DOWNLOADED, NOT BUNDLED
+----------------------------------
+The required base mods are not included in this package — their
+authors' GitHub releases are the only source. The first online launch
+installs the set for your game, and afterwards the drop-in checks for
+newer releases at most once a day and updates automatically. Once
+installed, everything works offline; update checks just fail silently.
+
+To turn off the update checks (a missing base mod is always fetched),
+edit reloaded-dropin/update.json and set "AutoUpdate": false.
+
+HOW IT WORKS / LOGS
+-------------------
+On every launch, before the game starts, the drop-in detects the game,
+scans mods/, generates Reloaded-II's configuration, and chain-loads the
+Reloaded mod loader — then applies any game-specific file work while
+the game is still starting up.
+
+If something doesn't work: run  ./collect-diagnostics.sh  from this
+folder (game closed) — it bundles every relevant log into
+dropin-diagnostics.zip right here, ready to attach to a bug report.
+
+If the whole game closes without a Reloaded error dialog, temporarily use:
+
+  PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%
+
+Launch once, then run collect-diagnostics.sh. This adds Proton's native
+crash log; restore the normal launch option afterwards.
+
+Or look at the logs directly:
+  reloaded-dropin/logs/bootstrap.log   (loader chain)
+  reloaded-dropin/logs/sync.log        (mod discovery + decisions)
+
+UNINSTALL
+---------
+Close the game and run:  ./uninstall.sh
+It restores every game file the drop-in changed (and removes any
+generated archives), returning the game to vanilla. Then remove the
+launch option from Steam properties.
+
+SAFETY NOTES
+------------
+- Everything the drop-in changes is restored by uninstall.sh; backups
+  are taken before any game file is touched.
+- Do not use with anti-cheat-protected online games.
+- reloaded-dropin/generated/ is disposable; deleting it is safe.

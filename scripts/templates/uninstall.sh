@@ -62,7 +62,19 @@ else
   echo "no mirror manifest found (no files were mirrored)"
 fi
 
-# 3. Remove the drop-in's own files. The proxy DLL is only removed if it is
+# 3. Remove loader-generated additive archives (FFXVI: ff16.utility.modloader
+#    rebuilds data/*.diff.pac each launch; originals are never modified, so
+#    deleting them returns the game to vanilla). No-op for other games.
+if [ -d "$GAME/data" ]; then
+  count=0
+  while IFS= read -r -d '' diffpac; do
+    rm -f "$diffpac"
+    count=$((count + 1))
+  done < <(find "$GAME/data" -name '*.diff.pac' -type f -print0 2>/dev/null)
+  [ "$count" -gt 0 ] && echo "removed $count generated .diff.pac archive(s)"
+fi
+
+# 4. Remove the drop-in's own files. The proxy DLL is only removed if it is
 #    the one we shipped (Ultimate ASI Loader) — never someone else's file.
 rm -f "$GAME/reloaded-dropin.asi"
 rm -rf "$GAME/reloaded-dropin"

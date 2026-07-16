@@ -2,7 +2,8 @@ using ReloadedDropIn.Adapter.Abstractions;
 using ReloadedDropIn.Adapter.GBFR;
 using ReloadedDropIn.Cli;
 
-var registeredAdapters = new IGameAdapter[] { new GbfrAdapter() };
+var registeredAdapters = new IGameAdapter[]
+    { new GbfrAdapter(), new ReloadedDropIn.Adapter.P5R.P5rAdapter(), new ReloadedDropIn.Adapter.FFXVI.FfxviAdapter() };
 
 if (args.Length == 0)
     return PrintUsage();
