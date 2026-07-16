@@ -112,9 +112,9 @@ public sealed class OverlayUi(string gameDirectory, Action<string> log)
             if (mod.UserConfig is not null)
             {
                 ImGui.SameLine(0, 12);
-                if (ImGui.SmallButton("settings"))
-                    mod.ConfigDirty = true; // reuse as "expanded" marker until first edit
-                if (mod.ConfigDirty)
+                if (ImGui.SmallButton(mod.ConfigExpanded ? "close settings" : "settings"))
+                    mod.ConfigExpanded = !mod.ConfigExpanded;
+                if (mod.ConfigExpanded)
                     RenderConfigEditor(mod);
             }
 
@@ -144,12 +144,22 @@ public sealed class OverlayUi(string gameDirectory, Action<string> log)
                     changed = true;
                 }
             }
-            else if (value.TryGetValue<double>(out var numberValue))
+            else if (value.TryGetValue<long>(out var longValue))
             {
-                var intValue = (int)numberValue;
+                // Integer-valued field: keep it integral so mods with int
+                // config properties can still deserialize the file.
+                var intValue = (int)longValue;
                 if (ImGui.InputInt(property.Key, ref intValue, 1, 10, 0))
                 {
-                    config[property.Key] = intValue;
+                    config[property.Key] = (long)intValue;
+                    changed = true;
+                }
+            }
+            else if (value.TryGetValue<double>(out var numberValue))
+            {
+                if (ImGui.InputDouble(property.Key, ref numberValue, 0.1, 1.0, "%g", 0))
+                {
+                    config[property.Key] = numberValue;
                     changed = true;
                 }
             }

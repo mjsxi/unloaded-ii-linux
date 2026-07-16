@@ -17,10 +17,14 @@ public sealed record CatalogMod
 
     public required bool Enabled { get; set; }
 
-    /// <summary>Editable user config (generated/User/Mods/&lt;id&gt;/Config.json), if any.</summary>
+    /// <summary>
+    /// Editable user config (generated/User/Mods/&lt;id&gt;/Config.json), if any.
+    /// Before the mod's first run that file doesn't exist yet, so it is seeded
+    /// from the Config.json the mod ships in its own folder, if present.
+    /// </summary>
     public JsonObject? UserConfig { get; set; }
     public string? UserConfigPath { get; init; }
-    public bool ConfigDirty { get; set; }
+    public bool ConfigExpanded { get; set; }
 }
 
 /// <summary>
@@ -65,7 +69,8 @@ public sealed class ModCatalog(string gameDirectory)
                 IsBaseMod = mod.Directory.Contains($"{separator}_base-mods{separator}", StringComparison.OrdinalIgnoreCase),
                 Enabled = !overrides.IsDisabled(mod.ModId),
                 UserConfigPath = configPath,
-                UserConfig = TryLoadConfig(configPath),
+                UserConfig = TryLoadConfig(configPath)
+                    ?? TryLoadConfig(Path.Combine(mod.Directory, "Config.json")),
             });
         }
 
@@ -110,7 +115,6 @@ public sealed class ModCatalog(string gameDirectory)
         Directory.CreateDirectory(Path.GetDirectoryName(mod.UserConfigPath)!);
         File.WriteAllText(mod.UserConfigPath,
             mod.UserConfig.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-        mod.ConfigDirty = false;
     }
 
     private static JsonObject? TryLoadConfig(string path)

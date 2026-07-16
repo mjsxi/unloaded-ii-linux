@@ -35,7 +35,7 @@ RELOADED_VERSION="1.30.2"
 PROXY_NAME="${PROXY_NAME:-$DEFAULT_PROXY}"
 VENDOR="$ROOT/vendor/reloaded-release"
 STAGE="$ROOT/dist/dropin-$GAME_ID"
-PACKAGE="$ROOT/dist/reloaded-dropin-$GAME_ID-$DROPIN_VERSION.zip"
+PACKAGE="$ROOT/dist/unloaded-ii-$GAME_ID-$DROPIN_VERSION.zip"
 echo "==> packaging for $GAME_NAME ($GAME_ID), proxy $PROXY_NAME"
 
 echo "==> checking inputs"

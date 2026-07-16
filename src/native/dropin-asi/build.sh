@@ -19,7 +19,7 @@ file "$OUT_DIR/reloaded-dropin.asi"
 
 # Ultimate ASI Loader invokes this export after LoadLibrary returns. P5R relies
 # on it to keep the startup thread out of CRI until Reloaded's hooks are ready.
-x86_64-w64-mingw32-objdump -p "$OUT_DIR/reloaded-dropin.asi" | rg 'InitializeASI' >/dev/null || {
+x86_64-w64-mingw32-objdump -p "$OUT_DIR/reloaded-dropin.asi" | grep 'InitializeASI' >/dev/null || {
   echo "reloaded-dropin.asi is missing the required InitializeASI export" >&2
   exit 1
 }
