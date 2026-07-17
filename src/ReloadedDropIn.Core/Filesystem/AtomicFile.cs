@@ -16,4 +16,20 @@ public static class AtomicFile
         File.WriteAllText(tempPath, contents);
         File.Move(tempPath, path, overwrite: true);
     }
+
+    /// <summary>
+    /// Binary counterpart used for runtime compatibility patches. The
+    /// destination is never left as a partially copied DLL if the process is
+    /// interrupted while preparing a launch.
+    /// </summary>
+    public static void WriteAllBytes(string path, ReadOnlySpan<byte> contents)
+    {
+        var directory = Path.GetDirectoryName(path)
+            ?? throw new ArgumentException($"path has no parent directory: {path}", nameof(path));
+        Directory.CreateDirectory(directory);
+
+        var tempPath = Path.Combine(directory, $".{Path.GetFileName(path)}.tmp-{Environment.ProcessId}");
+        File.WriteAllBytes(tempPath, contents);
+        File.Move(tempPath, path, overwrite: true);
+    }
 }

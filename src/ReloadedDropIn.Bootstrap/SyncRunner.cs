@@ -60,12 +60,31 @@ public static class SyncRunner
             // authors' official releases on first launch and keep them current
             // after that. Tests opt out via env var (mirrors the
             // RELOADED_DROPIN_APPDATA override).
-            if (Environment.GetEnvironmentVariable("RELOADED_DROPIN_DISABLE_UPDATE") is null)
+            var updatesEnabled = Environment.GetEnvironmentVariable("RELOADED_DROPIN_DISABLE_UPDATE") is null;
+            var faithDx12Ready = true;
+            if (updatesEnabled)
             {
                 using var feed = new Update.GitHubReleaseFeed();
                 var updater = new Update.BaseModInstaller(context, feed);
                 foreach (var line in updater.RunAsync(adapter.GetRequiredMods(), CancellationToken.None).GetAwaiter().GetResult())
                     Log($"update: {line}");
+
+                if (adapter is Adapter.FFXVI.FfxviAdapter)
+                {
+                    var patch = new Update.FaithDx12PatchInstaller(context, feed)
+                        .RunAsync(allowNetwork: true, CancellationToken.None).GetAwaiter().GetResult();
+                    faithDx12Ready = patch.Ready;
+                    foreach (var line in patch.Log)
+                        Log($"ffxvi-patch: {line}");
+                }
+            }
+            else if (adapter is Adapter.FFXVI.FfxviAdapter)
+            {
+                var patch = new Update.FaithDx12PatchInstaller(context, feed: null)
+                    .RunAsync(allowNetwork: false, CancellationToken.None).GetAwaiter().GetResult();
+                faithDx12Ready = patch.Ready;
+                foreach (var line in patch.Log)
+                    Log($"ffxvi-patch: {line}");
             }
 
             foreach (var line in adapter.CreateBackupsAsync(context, CancellationToken.None).GetAwaiter().GetResult())
@@ -81,7 +100,18 @@ public static class SyncRunner
                 Log($"ignored: {issue.Path} — {issue.Reason}");
             Log($"discovered {scan.Mods.Count} mod(s): {string.Join(", ", scan.Mods.Select(m => m.ModId))}");
 
-            var resolution = new DependencyResolver().Resolve(scan.Mods);
+            IReadOnlyList<DiscoveredMod> usableMods = scan.Mods;
+            if (!faithDx12Ready)
+            {
+                usableMods = scan.Mods
+                    .Where(mod => !mod.ModId.Equals(
+                        Adapter.FFXVI.FfxviAdapter.FaithFrameworkModId,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                Log("[Warning] Faith Framework was removed from this launch plan because its safe DX12 replacement is unavailable");
+            }
+
+            var resolution = new DependencyResolver().Resolve(usableMods);
             foreach (var missing in resolution.MissingDependencies)
                 Log($"[Warning] {missing.ModId} requires missing dependency {missing.MissingDependencyId}");
 
@@ -96,7 +126,7 @@ public static class SyncRunner
             // (even transitive) dependency makes Reloaded abort the whole load
             // with an error dialog — a missing base mod (first launch offline)
             // must instead mean a quiet vanilla run that heals next launch.
-            var presentIds = scan.Mods.Select(m => m.ModId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var presentIds = usableMods.Select(m => m.ModId).ToHashSet(StringComparer.OrdinalIgnoreCase);
             bool Loadable(string id) => presentIds.Contains(id) && !resolution.UnloadableModIds.Contains(id);
             var requiredEnabled = adapter.GetRequiredMods()
                 .Where(m => m.Enabled && Loadable(m.Id))

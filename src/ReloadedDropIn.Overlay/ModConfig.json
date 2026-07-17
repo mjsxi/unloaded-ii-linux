@@ -18,12 +18,16 @@
   "ModDependencies": [
     "reloaded.sharedlib.hooks"
   ],
-  "OptionalDependencies": [],
+  "OptionalDependencies": [
+    "ff16.utility.framework"
+  ],
   "SupportedAppId": [
     "granblue_fantasy_relink.exe",
     "granblue_fantasy_relink_endless_ragnarok_beta_test.exe",
     "granblue_fantasy_relink_endless_ragnarok_demo.exe",
-    "p5r.exe"
+    "p5r.exe",
+    "ffxvi.exe",
+    "ffxvi_demo.exe"
   ],
   "ProjectUrl": ""
 }

@@ -17,6 +17,8 @@ folder.
 Every game uses the same launch option, ships the same core, and gets the same
 features: zip-drop mod install, the INSERT-key in-game overlay (list, toggle,
 configure mods), and automatic download + updates of its required base mods.
+On FFXVI the Unloaded-II panel registers inside Faith's patched ImGui renderer,
+so Faith UI mods and the mod-management panel share one DX12 hook.
 Game-specific disposable loader caches are cleared automatically so removing a
 mod cannot leave generated output active.
 
@@ -30,7 +32,7 @@ which game it's in at launch:
 |---|---|---|
 | Granblue Fantasy: Relink | 881020 | verified on hardware, tested with some mods |
 | Persona 5 Royal | 1687950 | verified on hardware, tested with some mods |
-| Final Fantasy XVI | 2515020 | built, not yet verified on hardware |
+| Final Fantasy XVI | 2515020 | verified on hardware, tested with some mods |
 
 ### Game support
 
@@ -69,6 +71,7 @@ src/
   ReloadedDropIn.Core/                  game-agnostic: discovery, manifests, dependencies, config generation
   ReloadedDropIn.Bootstrap/             in-process sync pipeline + base-mod installer + archive importer
   ReloadedDropIn.Overlay/               in-game INSERT-key overlay (Dear ImGui via swapchain hook)
+  ReloadedDropIn.Overlay.Faith/         FFXVI-only bridge into Faith's patched ImGui renderer
   ReloadedDropIn.Cli/                   command-line tool
   ReloadedDropIn.Adapter.Abstractions/  IGameAdapter contract
   ReloadedDropIn.Adapter.GBFR/          everything Relink-specific (data.i index, file mirror)
@@ -97,7 +100,9 @@ licensed third-party runtime components. Their attributions, source links, and
 license locations are maintained in
 [`scripts/templates/THIRD-PARTY-LICENSES.txt`](scripts/templates/THIRD-PARTY-LICENSES.txt).
 Game-specific base mods are not redistributed; they are downloaded directly
-from their authors' official GitHub releases on first launch.
+from their authors' official GitHub releases on first launch. The modified
+Faith DX12 source, binary, and license live in the separate
+[`dxd12-patch-files`](https://github.com/mjsxi/dxd12-patch-files) repository.
 
 ## Docs
 

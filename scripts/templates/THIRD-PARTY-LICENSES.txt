@@ -53,7 +53,7 @@ Overlay graphics and interop components
     Copyright (c) 2016 João Matos, Dimitar Dobrev
     License: MIT — https://github.com/mono/CppSharp
 
-  Reloaded.Imgui.Hook 4.0.1
+  Reloaded.Imgui.Hook 4.1.0
     Author: Sewer56
     License: LGPL-3.0-only
     Source: https://github.com/Sewer56/Reloaded.Imgui.Hook
@@ -72,6 +72,13 @@ Overlay graphics and interop components
     Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
     License: MIT — https://github.com/sharpdx/SharpDX
 
+  NenTools.ImGui.Interfaces 1.0.3
+    Copyright (c) 2025 Nenkai
+    License: MIT — licenses/MIT.txt
+    Source: https://github.com/Nenkai/NenTools.ImGui
+    Used only by the FFXVI Faith overlay bridge; it contains interfaces, not a
+    renderer or DirectX hook.
+
 SharpCompress 1.0.0
   Location: reloaded-dropin/bootstrap/
   Copyright (c) 2014 Adam Hathcock
@@ -82,13 +89,21 @@ Unloaded-II drop-in
   License: GPL-3.0
   Source: https://github.com/mjsxi/unloaded-ii-linux
 
-
 DOWNLOADED ON FIRST LAUNCH — NOT REDISTRIBUTED
 -----------------------------------------------
 
 The following required base mods are not included in this archive. Unloaded-II
 downloads release assets directly from the authors' official GitHub
 repositories. They remain under their respective upstream licenses.
+
+Final Fantasy XVI DX12 compatibility replacement
+  NenTools.ImGui.Hooks.DirectX12.dll
+    Runtime destination: the downloaded ff16.utility.framework mod directory
+    Copyright (c) Nenkai and contributors
+    License: MIT
+    Modified source, binary, and license:
+      https://github.com/mjsxi/dxd12-patch-files
+    Upstream source: https://github.com/Nenkai/NenTools.ImGui
 
 Granblue Fantasy: Relink
   gbfrelink.utility.manager

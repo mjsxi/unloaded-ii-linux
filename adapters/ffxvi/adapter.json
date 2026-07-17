@@ -17,6 +17,7 @@
   },
   "requiredMods": [
     { "id": "ff16.utility.modloader", "enabled": true },
+    { "id": "ff16.utility.framework", "enabled": false },
     { "id": "reloaded.sharedlib.hooks", "enabled": false },
     { "id": "Reloaded.Memory.SigScan.ReloadedII", "enabled": false }
   ],

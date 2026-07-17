@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Reloaded.Mod.Interfaces" Version="2.5.0" ExcludeAssets="runtime" />
+    <!-- Faith's supported controller contract. Consumer mods normally carry
+         this small interface assembly; Reloaded unifies it with Faith's copy. -->
+    <PackageReference Include="NenTools.ImGui.Interfaces" Version="1.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReloadedDropIn.Overlay\ReloadedDropIn.Overlay.csproj" />
+  </ItemGroup>
+
+</Project>

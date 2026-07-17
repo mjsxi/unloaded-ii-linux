@@ -45,8 +45,17 @@ everything else in mods/ is yours.
 
 IN-GAME OVERLAY
 ---------------
-Press INSERT in-game to open the mod panel: see your mods, switch them
-on/off, and edit their settings. Changes apply on the next game launch.
+In Granblue Fantasy: Relink and Persona 5 Royal, press INSERT in-game to
+open the Unloaded-II mod panel: see your mods, switch them on/off, and edit
+their settings. Changes apply on the next game launch.
+
+Final Fantasy XVI uses Faith Framework's overlay and UI APIs, with its
+DirectX 12 renderer replaced by a Proton-safe compatibility build downloaded
+from mjsxi/dxd12-patch-files. This keeps Faith-based UI mods (such as combo
+meters) and the Unloaded-II mod-management panel on the same single renderer.
+Press INSERT to open the panel, or select Unloaded-II Panel from Faith's Mods
+menu.
+If the game or overlay fails, close the game and run collect-diagnostics.sh.
 
 PER-GAME NOTES
 --------------
@@ -66,14 +75,19 @@ additive *.diff.pac archives in the game's data/ folder and rebuilds
 them every launch. Original game files are never modified, and the
 drop-in clears the generated archives whenever your mod set changes,
 so a removed mod can never leave stale content behind.
+After Faith Framework is downloaded or updated, the drop-in downloads and
+caches its DX12 renderer replacement, then swaps only that DLL. Faith's
+remaining files and public mod APIs stay unchanged. If the patch cannot be
+downloaded and no cached copy exists, Faith and Faith-dependent mods stay
+disabled for that launch instead of loading the crash-prone renderer.
 
 BASE MODS: DOWNLOADED, NOT BUNDLED
 ----------------------------------
-The required base mods are not included in this package — their
-authors' GitHub releases are the only source. The first online launch
-installs the set for your game, and afterwards the drop-in checks for
-newer releases at most once a day and updates automatically. Once
-installed, everything works offline; update checks just fail silently.
+The required base mods and FFXVI's DX12 replacement are not included in this
+package — their GitHub releases are the source. The first online launch
+installs the set for your game, and afterwards the drop-in checks for newer
+releases at most once a day and updates automatically. Once installed,
+everything works offline; update checks just fail silently.
 
 To turn off the update checks (a missing base mod is always fetched),
 edit reloaded-dropin/update.json and set "AutoUpdate": false.

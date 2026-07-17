@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.Loader;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Imgui.Hook;
 using Reloaded.Imgui.Hook.Direct3D11;
@@ -18,9 +20,18 @@ public class Program : IModV2, IExports
 {
     public Action Disposing { get; } = () => { };
 
+    /// <summary>
+    /// FFXVI's ImGui components render through Faith Framework's patched DX12
+    /// backend. Starting this overlay's independent renderer as well would put
+    /// two hook/render stacks on the same swapchain.
+    /// </summary>
+    private static readonly string[] FaithRendererExecutables =
+        ["ffxvi.exe", "ffxvi_demo.exe"];
+
     private OverlayUi? _ui;
     private CursorLiberator? _cursorLiberator;
     private bool _hooked;
+    private Action<bool>? _setFaithComponentEnabled;
 
     public void StartEx(IModLoaderV1 loader, IModConfigV1 config)
     {
@@ -29,6 +40,15 @@ public class Program : IModV2, IExports
 
         try
         {
+            var executablePath = Process.GetCurrentProcess().MainModule!.FileName;
+            var executableName = Path.GetFileName(executablePath);
+            var gameDirectory = Path.GetDirectoryName(executablePath)!;
+            if (FaithRendererExecutables.Contains(executableName, StringComparer.OrdinalIgnoreCase))
+            {
+                StartFaithOverlay(loaderV2, logger, gameDirectory);
+                return;
+            }
+
             var hooksController = loaderV2.GetController<IReloadedHooks>();
             if (hooksController is null || !hooksController.TryGetTarget(out var hooks))
             {
@@ -38,8 +58,10 @@ public class Program : IModV2, IExports
 
             SDK.Init(hooks);
 
-            var gameDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule!.FileName)!;
-            _ui = new OverlayUi(gameDirectory, message => logger.WriteLine($"[dropin.overlay] {message}"));
+            _ui = new OverlayUi(
+                gameDirectory,
+                new DearOverlayImGui(),
+                message => logger.WriteLine($"[dropin.overlay] {message}"));
 
             try
             {
@@ -74,14 +96,46 @@ public class Program : IModV2, IExports
         }
     }
 
+    private void StartFaithOverlay(IModLoader loader, ILogger logger, string gameDirectory)
+    {
+        try
+        {
+            // Keep Faith's interface types out of the universal overlay
+            // assembly. Reloaded reflects every type in a mod at startup; a
+            // direct reference here would make GBFR/P5R require Faith too.
+            var modDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location)!;
+            var bridgePath = Path.Combine(modDirectory, "ReloadedDropIn.Overlay.Faith.dll");
+            if (!File.Exists(bridgePath))
+                throw new FileNotFoundException("Faith overlay bridge is missing", bridgePath);
+
+            var loadContext = AssemblyLoadContext.GetLoadContext(typeof(Program).Assembly)
+                              ?? AssemblyLoadContext.Default;
+            var bridgeAssembly = loadContext.LoadFromAssemblyPath(bridgePath);
+            var bridgeType = bridgeAssembly.GetType("ReloadedDropIn.Overlay.Faith.FaithBridge", throwOnError: true)!;
+            var register = bridgeType.GetMethod("Register", BindingFlags.Public | BindingFlags.Static)
+                           ?? throw new MissingMethodException(bridgeType.FullName, "Register");
+            var log = new Action<string>(message => logger.WriteLine($"[dropin.overlay] {message}"));
+            _setFaithComponentEnabled = register.Invoke(null, [loader, gameDirectory, log]) as Action<bool>
+                ?? throw new InvalidOperationException("Faith overlay bridge returned no component controller");
+            logger.WriteLine("[dropin.overlay] registered with Faith's patched DX12 renderer — press INSERT in-game.");
+        }
+        catch (Exception ex)
+        {
+            var actual = ex is TargetInvocationException { InnerException: not null } ? ex.InnerException : ex;
+            logger.WriteLine($"[dropin.overlay] Faith bridge failed; FFXVI panel disabled: {actual.Message}");
+        }
+    }
+
     public void Suspend()
     {
+        _setFaithComponentEnabled?.Invoke(false);
         if (_hooked)
             ImguiHook.Disable();
     }
 
     public void Resume()
     {
+        _setFaithComponentEnabled?.Invoke(true);
         if (_hooked)
             ImguiHook.Enable();
     }

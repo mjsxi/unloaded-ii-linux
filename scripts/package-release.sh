@@ -57,15 +57,23 @@ echo "==> checking inputs"
   echo "missing $VENDOR/dotnet-runtime-win-x64.zip (get from https://aka.ms/dotnet/9.0/dotnet-runtime-win-x64.zip)"
   exit 1
 }
-
 echo "==> building native .asi"
 "$ROOT/src/native/dropin-asi/build.sh" "$ROOT/dist/native"
 
 echo "==> publishing managed bootstrap"
-dotnet publish "$ROOT/src/ReloadedDropIn.Bootstrap" -c Release -o "$ROOT/dist/bootstrap-publish" -v quiet
+dotnet publish "$ROOT/src/ReloadedDropIn.Bootstrap" -c Release -o "$ROOT/dist/bootstrap-publish" \
+  --no-restore --disable-build-servers -p:UseSharedCompilation=false -p:NuGetAudit=false \
+  -p:WarningsNotAsErrors=NU1900 -m:1 -v quiet
 
 echo "==> publishing overlay mod"
-dotnet publish "$ROOT/src/ReloadedDropIn.Overlay" -c Release -o "$ROOT/dist/overlay-publish" -v quiet
+dotnet publish "$ROOT/src/ReloadedDropIn.Overlay" -c Release -o "$ROOT/dist/overlay-publish" \
+  --no-restore --disable-build-servers -p:UseSharedCompilation=false -p:NuGetAudit=false \
+  -p:WarningsNotAsErrors=NU1900 -m:1 -v quiet
+
+echo "==> publishing FFXVI Faith overlay bridge"
+dotnet publish "$ROOT/src/ReloadedDropIn.Overlay.Faith" -c Release -o "$ROOT/dist/faith-overlay-publish" \
+  --no-restore --disable-build-servers -p:UseSharedCompilation=false -p:NuGetAudit=false \
+  -p:WarningsNotAsErrors=NU1900 -m:1 -v quiet
 
 echo "==> staging package"
 rm -rf "$STAGE"
@@ -106,12 +114,22 @@ cp -R "$ROOT/dist/bootstrap-publish/." "$STAGE/reloaded-dropin/bootstrap/"
 # The third-party base mods (utility manager + libraries) are NOT packaged:
 # per their maintainers' wishes we don't redistribute them. BaseModInstaller
 # downloads them from their official GitHub releases on the first online
-# launch and keeps them updated afterwards.
+# launch and keeps them updated afterwards. FFXVI's Faith DX12 replacement is
+# likewise downloaded from mjsxi/dxd12-patch-files only when FFXVI is detected.
 
 # In-game overlay mod (INSERT key) — ours, ships as a base mod. Its ModVersion is
 # stamped from VERSION (numeric part) so the panel always shows the real one.
 mkdir -p "$STAGE/mods/_base-mods/reloaded.dropin.overlay"
 cp -R "$ROOT/dist/overlay-publish/." "$STAGE/mods/_base-mods/reloaded.dropin.overlay/"
+# Loaded reflectively only on FFXVI after Faith has exported its ImGui
+# controllers. Keeping this side assembly out of the main overlay's type table
+# lets GBFR/P5R load without Faith or NenTools being present.
+cp "$ROOT/dist/faith-overlay-publish/ReloadedDropIn.Overlay.Faith.dll" \
+  "$STAGE/mods/_base-mods/reloaded.dropin.overlay/"
+cp "$ROOT/dist/faith-overlay-publish/ReloadedDropIn.Overlay.Faith.pdb" \
+  "$STAGE/mods/_base-mods/reloaded.dropin.overlay/"
+cp "$ROOT/dist/faith-overlay-publish/NenTools.ImGui.Interfaces.dll" \
+  "$STAGE/mods/_base-mods/reloaded.dropin.overlay/"
 sed -i '' "s/\"ModVersion\": \"[^\"]*\"/\"ModVersion\": \"${DROPIN_VERSION%-dev}\"/" \
   "$STAGE/mods/_base-mods/reloaded.dropin.overlay/ModConfig.json"
 # The publish emits native cimgui for every platform; the game is win-x64 only.

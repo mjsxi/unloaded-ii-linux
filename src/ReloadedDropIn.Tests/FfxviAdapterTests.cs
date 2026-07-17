@@ -68,7 +68,7 @@ public class FfxviAdapterTests : IDisposable
 
         var enabled = Assert.Single(required, m => m.Enabled);
         Assert.Equal(FfxviAdapter.ModLoaderModId, enabled.Id);
-        Assert.Equal(3, required.Count);
+        Assert.Equal(4, required.Count);
     }
 
     [Fact]
@@ -133,4 +133,5 @@ public class FfxviAdapterTests : IDisposable
 
         Assert.Contains(log, line => line.Contains("nothing to restore"));
     }
+
 }

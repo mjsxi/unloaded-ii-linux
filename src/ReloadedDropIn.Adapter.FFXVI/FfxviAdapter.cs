@@ -17,10 +17,14 @@ namespace ReloadedDropIn.Adapter.FFXVI;
 ///
 /// The required set is the full dependency closure of ff16.utility.modloader
 /// 1.2.1 (ModConfig.json verified 2026-07-16): just sharedlib.hooks + sigscan.
+/// Faith Framework (ff16.utility.framework) is included on top: the loader
+/// doesn't need it, but FFXVI gameplay/code mods routinely depend on it, and
+/// a missing dependency means the drop-in must leave those mods disabled.
 /// </summary>
 public sealed class FfxviAdapter : IGameAdapter
 {
     public const string ModLoaderModId = "ff16.utility.modloader";
+    public const string FaithFrameworkModId = "ff16.utility.framework";
 
     public string Id => "ffxvi";
     public string DisplayName => "Final Fantasy XVI";
@@ -78,6 +82,14 @@ public sealed class FfxviAdapter : IGameAdapter
         // automatically once they exist.
         new RequiredMod
         {
+            // De-facto standard framework for FF16 code mods (hooks into the
+            // game's Nex/imgui internals). Repo renamed from FF16Framework.
+            Id = FaithFrameworkModId, Enabled = false,
+            UpdateRepo = "Nenkai/FaithFramework",
+            UpdateAssetPrefix = "FaithFramework",
+        },
+        new RequiredMod
+        {
             Id = "reloaded.sharedlib.hooks", Enabled = false,
             UpdateRepo = "Sewer56/Reloaded.SharedLib.Hooks.ReloadedII",
             UpdateAssetPrefix = "Reloaded.Hooks.ReloadedII",
@@ -92,9 +104,8 @@ public sealed class FfxviAdapter : IGameAdapter
 
     public InjectionConfiguration GetInjectionConfiguration(AdapterContext context) => new()
     {
-        // Same uniform proxy/launch option as the other games. NOT yet
-        // verified on hardware: if bootstrap.log never appears, ffxvi.exe
-        // doesn't import winmm — repackage with PROXY_NAME=dinput8.dll.
+        // Verified under Proton with the same uniform proxy/launch option as
+        // the other supported games.
         PreferredProxyDll = "winmm.dll",
         WineDllOverride = "winmm=n,b",
     };
