@@ -76,6 +76,7 @@ src/
   ReloadedDropIn.Adapter.Abstractions/  IGameAdapter contract
   ReloadedDropIn.Adapter.GBFR/          everything Relink-specific (data.i index, file mirror)
   ReloadedDropIn.Adapter.P5R/           everything Persona 5 Royal-specific (just the mod stack)
+  ReloadedDropIn.Adapter.FFXVI/         everything Final Fantasy XVI-specific (Faith Framework mod stack)
   ReloadedDropIn.Tests/
   native/dropin-asi/                    the .asi bootstrap (C, mingw)
 adapters/                               declarative adapter metadata per game
