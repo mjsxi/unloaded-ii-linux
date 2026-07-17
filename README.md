@@ -17,8 +17,6 @@ folder.
 Every game uses the same launch option, ships the same core, and gets the same
 features: zip-drop mod install, the INSERT-key in-game overlay (list, toggle,
 configure mods), and automatic download + updates of its required base mods.
-On FFXVI the Unloaded-II panel registers inside Faith's patched ImGui renderer,
-so Faith UI mods and the mod-management panel share one DX12 hook.
 Game-specific disposable loader caches are cleared automatically so removing a
 mod cannot leave generated output active.
 
