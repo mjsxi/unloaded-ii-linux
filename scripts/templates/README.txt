@@ -93,7 +93,7 @@ BASE MODS: DOWNLOADED, NOT BUNDLED
 The required base mods and FFXVI's DX12 replacement are not included in this
 package — their GitHub releases are the source. The first online launch
 installs the set for your game, and afterwards the drop-in checks for newer
-releases at most once a day and updates automatically. Once installed,
+releases at most once a week and updates automatically. Once installed,
 everything works offline; update checks just fail silently.
 
 To turn off the update checks (a missing base mod is always fetched),

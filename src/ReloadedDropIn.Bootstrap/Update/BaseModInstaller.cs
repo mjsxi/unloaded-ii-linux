@@ -19,7 +19,7 @@ namespace ReloadedDropIn.Bootstrap.Update;
 /// fast and failure-proof — any error (offline, rate limit, bad archive)
 /// leaves the installed state untouched and never blocks the launch. UPDATE
 /// checks are throttled via reloaded-dropin/update.json (default: once per
-/// 24h) and can be disabled there ("AutoUpdate": false); INSTALLING a missing
+/// week) and can be disabled there ("AutoUpdate": false); INSTALLING a missing
 /// base mod ignores both, since nothing works until it exists.
 /// </summary>
 public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
@@ -28,7 +28,10 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
     public sealed record UpdateSettings
     {
         public bool AutoUpdate { get; init; } = true;
-        public int CheckIntervalHours { get; init; } = 24;
+        // Weekly: base mods change rarely, and a stale check only delays an
+        // update, never blocks a missing-mod install (those bypass the
+        // throttle entirely).
+        public int CheckIntervalHours { get; init; } = 168;
         public DateTime LastCheckedUtc { get; init; } = DateTime.MinValue;
 
         public static string PathFor(string dropInDirectory) => Path.Combine(dropInDirectory, "update.json");
