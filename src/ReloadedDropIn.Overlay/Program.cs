@@ -3,8 +3,6 @@ using System.Reflection;
 using System.Runtime.Loader;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Imgui.Hook;
-using Reloaded.Imgui.Hook.Direct3D11;
-using Reloaded.Imgui.Hook.Implementations;
 using Reloaded.Mod.Interfaces;
 using Reloaded.Mod.Interfaces.Internal;
 
@@ -56,7 +54,18 @@ public class Program : IModV2, IExports
                 return;
             }
 
-            SDK.Init(hooks);
+            // Route the hook library's own diagnostics (window binds, present
+            // discards) into the Reloaded log, deduplicated: they repeat per
+            // frame and each distinct message only matters once.
+            var loggedHookMessages = new HashSet<string>();
+            SDK.Init(hooks, message =>
+            {
+                lock (loggedHookMessages)
+                {
+                    if (loggedHookMessages.Count < 256 && loggedHookMessages.Add(message))
+                        logger.WriteLine($"[dropin.overlay/hook] {message}");
+                }
+            });
 
             _ui = new OverlayUi(
                 gameDirectory,
@@ -77,9 +86,13 @@ public class Program : IModV2, IExports
             {
                 try
                 {
+                    // Hardened replacement for the stock ImguiHookDx11: it
+                    // survives splash-window -> game-window handoffs and
+                    // swapchain recreation (see ResilientImguiHookDx11).
                     await ImguiHook.Create(_ui.Render, new ImguiHookOptions
                     {
-                        Implementations = [new ImguiHookDx11()],
+                        Implementations =
+                            [new ResilientImguiHookDx11(message => logger.WriteLine($"[dropin.overlay/dx11] {message}"))],
                     }).ConfigureAwait(false);
                     _hooked = true;
                     logger.WriteLine("[dropin.overlay] overlay ready — press INSERT in-game.");

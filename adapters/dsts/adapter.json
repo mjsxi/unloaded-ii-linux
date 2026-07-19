@@ -1,0 +1,28 @@
+{
+  "id": "dsts",
+  "displayName": "Digimon Story: Time Stranger",
+  "steamAppIds": [1984270],
+  "executables": [
+    "Digimon Story Time Stranger.exe"
+  ],
+  "platforms": [
+    "windows",
+    "linux-proton"
+  ],
+  "injection": {
+    "preferredProxy": "winmm.dll",
+    "wineOverride": "winmm=n,b",
+    "note": "unverified on hardware; fall back to dinput8.dll if the exe does not import winmm"
+  },
+  "requiredMods": [
+    { "id": "DSTS.ModLoader", "enabled": true },
+    { "id": "MVGL.FileLoader.Reloaded", "enabled": false },
+    { "id": "reloaded.sharedlib.hooks", "enabled": false },
+    { "id": "Reloaded.Memory.SigScan.ReloadedII", "enabled": false },
+    { "id": "DSTS.RyoFramework", "enabled": false },
+    { "id": "Ryo.Reloaded", "enabled": false },
+    { "id": "SharedScans.Reloaded", "enabled": false }
+  ],
+  "backups": [],
+  "notes": "DSTS.ModLoader registers a probing path with MVGL.FileLoader, which redirects MVGL archive reads at runtime. No game file is modified and no generated output persists on disk. Renders with D3D11 despite the DX12 Steam requirement (PCGamingWiki, 2025-12-18), so the stock overlay hook applies."
+}

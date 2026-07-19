@@ -47,6 +47,8 @@ cp -r "$GAME_DIR/reloaded-dropin/generated" "$OUT/generated" 2>/dev/null
 cp -r "$GAME_DIR/reloaded-dropin/state" "$OUT/state" 2>/dev/null
 cp "$GAME_DIR/reloaded-dropin/overlay/overrides.json" "$OUT/" 2>/dev/null
 cp "$GAME_DIR/reloaded-dropin/update.json" "$OUT/" 2>/dev/null
+# ImGui's window-state file: its existence proves overlay frames actually ran.
+cp "$GAME_DIR/imgui.ini" "$OUT/" 2>/dev/null
 
 # Cross-launch bookkeeping: baseline hashes + mirror manifest (not the
 # data.i.orig backup itself — too big).

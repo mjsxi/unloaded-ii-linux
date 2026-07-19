@@ -3,7 +3,7 @@ using ReloadedDropIn.Adapter.GBFR;
 using ReloadedDropIn.Cli;
 
 var registeredAdapters = new IGameAdapter[]
-    { new GbfrAdapter(), new ReloadedDropIn.Adapter.P5R.P5rAdapter(), new ReloadedDropIn.Adapter.FFXVI.FfxviAdapter() };
+    { new GbfrAdapter(), new ReloadedDropIn.Adapter.P5R.P5rAdapter(), new ReloadedDropIn.Adapter.FFXVI.FfxviAdapter(), new ReloadedDropIn.Adapter.DSTS.DstsAdapter() };
 
 if (args.Length == 0)
     return PrintUsage();

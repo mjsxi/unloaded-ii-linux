@@ -17,6 +17,8 @@ folder.
 Every game uses the same launch option, ships the same core, and gets the same
 features: zip-drop mod install, the INSERT-key in-game overlay (list, toggle,
 configure mods), and automatic download + updates of its required base mods.
+On FFXVI the Unloaded-II panel registers inside Faith's patched ImGui renderer,
+so Faith UI mods and the mod-management panel share one DX12 hook.
 Game-specific disposable loader caches are cleared automatically so removing a
 mod cannot leave generated output active.
 
@@ -31,6 +33,7 @@ which game it's in at launch:
 | Granblue Fantasy: Relink | 881020 | verified on hardware, tested with some mods |
 | Persona 5 Royal | 1687950 | verified on hardware, tested with some mods |
 | Final Fantasy XVI | 2515020 | verified on hardware, tested with some mods |
+| Digimon Story: Time Stranger | 1984270 | verified on hardware, tested with some mods |
 
 ### Game support
 
@@ -60,7 +63,10 @@ has been calculated.
 
 Third-party base mods (each game's mod loader and its libraries) are **not
 redistributed**: the first online launch downloads them from their authors'
-official GitHub releases and keeps them updated afterwards.
+official GitHub releases and keeps them updated afterwards. FFXVI also downloads
+its Faith Framework DX12 compatibility replacement from the separate
+[`mjsxi/dxd12-patch-files`](https://github.com/mjsxi/dxd12-patch-files)
+release feed; it is not carried in the universal package.
 
 ## Layout
 
@@ -75,6 +81,7 @@ src/
   ReloadedDropIn.Adapter.GBFR/          everything Relink-specific (data.i index, file mirror)
   ReloadedDropIn.Adapter.P5R/           everything Persona 5 Royal-specific (just the mod stack)
   ReloadedDropIn.Adapter.FFXVI/         everything Final Fantasy XVI-specific (Faith Framework mod stack)
+  ReloadedDropIn.Adapter.DSTS/          everything Digimon Story: Time Stranger-specific (just the mod stack)
   ReloadedDropIn.Tests/
   native/dropin-asi/                    the .asi bootstrap (C, mingw)
 adapters/                               declarative adapter metadata per game
@@ -102,6 +109,15 @@ Game-specific base mods are not redistributed; they are downloaded directly
 from their authors' official GitHub releases on first launch. The modified
 Faith DX12 source, binary, and license live in the separate
 [`dxd12-patch-files`](https://github.com/mjsxi/dxd12-patch-files) repository.
+
+## Reporting issues
+
+Run `./collect-diagnostics.sh` from the game directory (game closed) and
+attach the resulting `dropin-diagnostics.zip` to a
+[GitHub issue](https://github.com/mjsxi/unloaded-ii-linux/issues). For crashes,
+launch once with `PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%`
+first so the collector can pick up Proton's log. Full steps are in the
+package's `README.txt` under TROUBLESHOOTING.
 
 ## Docs
 

@@ -8,11 +8,13 @@ in on launch:
   - Granblue Fantasy: Relink
   - Persona 5 Royal
   - Final Fantasy XVI
+  - Digimon Story: Time Stranger
 
 INSTALL (Linux / Steam Deck / Proton)
 -------------------------------------
 1. Extract this archive into the game directory, next to the game's
-   executable (granblue_fantasy_relink.exe / P5R.exe / ffxvi.exe).
+   executable (granblue_fantasy_relink.exe / P5R.exe / ffxvi.exe /
+   Digimon Story Time Stranger.exe).
    You should end up with:
 
      <the game's .exe>
@@ -45,9 +47,10 @@ everything else in mods/ is yours.
 
 IN-GAME OVERLAY
 ---------------
-In Granblue Fantasy: Relink and Persona 5 Royal, press INSERT in-game to
-open the Unloaded-II mod panel: see your mods, switch them on/off, and edit
-their settings. Changes apply on the next game launch.
+In Granblue Fantasy: Relink, Persona 5 Royal, and Digimon Story: Time
+Stranger, press INSERT in-game to open the Unloaded-II mod panel: see your
+mods, switch them on/off, and edit their settings. Changes apply on the
+next game launch.
 
 Final Fantasy XVI uses Faith Framework's overlay and UI APIs, with its
 DirectX 12 renderer replaced by a Proton-safe compatibility build downloaded
@@ -81,6 +84,10 @@ remaining files and public mod APIs stay unchanged. If the patch cannot be
 downloaded and no cached copy exists, Faith and Faith-dependent mods stay
 disabled for that launch instead of loading the crash-prone renderer.
 
+Digimon Story: Time Stranger — mods are served entirely at runtime
+through MVGL archive redirection (DSTS Mod Loader + MVGL FileLoader);
+no game file is ever modified and nothing is generated on disk.
+
 BASE MODS: DOWNLOADED, NOT BUNDLED
 ----------------------------------
 The required base mods and FFXVI's DX12 replacement are not included in this
@@ -99,20 +106,46 @@ scans mods/, generates Reloaded-II's configuration, and chain-loads the
 Reloaded mod loader — then applies any game-specific file work while
 the game is still starting up.
 
-If something doesn't work: run  ./collect-diagnostics.sh  from this
-folder (game closed) — it bundles every relevant log into
-dropin-diagnostics.zip right here, ready to attach to a bug report.
-
-If the whole game closes without a Reloaded error dialog, temporarily use:
-
-  PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%
-
-Launch once, then run collect-diagnostics.sh. This adds Proton's native
-crash log; restore the normal launch option afterwards.
-
-Or look at the logs directly:
+To look at the logs directly:
   reloaded-dropin/logs/bootstrap.log   (loader chain)
   reloaded-dropin/logs/sync.log        (mod discovery + decisions)
+
+TROUBLESHOOTING
+---------------
+If something doesn't work — a mod not loading, the overlay not showing,
+the game misbehaving — collect diagnostics and report it. The bundle is
+what lets anyone actually fix the problem, so please include it.
+
+1. Close the game.
+
+2. Open a terminal and run the collector by its full path (replace the
+   path with wherever your game actually lives):
+
+     bash "/path/to/your/steamapps/common/<the game>/collect-diagnostics.sh"
+
+   (If your terminal is already in the game's folder — the folder this
+   README is in — a plain  ./collect-diagnostics.sh  works too.)
+
+   It gathers every relevant log and config into a dropin-diagnostics.zip
+   next to the script. It collects logs and mod lists only — no saves,
+   no personal data, no game files.
+
+3. If the game CRASHES (closes without any error dialog), the crash
+   happens below our logs, so first add Proton logging to the Steam
+   launch options:
+
+     PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%
+
+   Launch once to reproduce the crash, run ./collect-diagnostics.sh
+   again (it picks up Proton's log automatically), then restore the
+   normal launch option.
+
+4. Attach dropin-diagnostics.zip to a bug report at:
+
+     https://github.com/mjsxi/unloaded-ii-linux/issues
+
+   and mention: which game, what you expected, what happened instead,
+   and roughly when it last worked (if it ever did).
 
 UNINSTALL
 ---------
