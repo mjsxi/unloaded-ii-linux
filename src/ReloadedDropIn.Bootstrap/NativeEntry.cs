@@ -8,6 +8,9 @@ namespace ReloadedDropIn.Bootstrap;
 /// </summary>
 public static class NativeEntry
 {
+    /// <summary>Bridges RunSync → RunPostLoad within the same process lifetime.</summary>
+    private static SyncRunner? _runner;
+
     public static int RunSync(IntPtr args, int sizeBytes)
     {
         _ = sizeBytes;
@@ -19,7 +22,8 @@ public static class NativeEntry
             if (string.IsNullOrWhiteSpace(gameDirectory))
                 return 10;
 
-            return SyncRunner.Run(gameDirectory);
+            _runner = new SyncRunner();
+            return _runner.Run(gameDirectory);
         }
         catch (Exception ex)
         {
@@ -41,7 +45,7 @@ public static class NativeEntry
             if (string.IsNullOrWhiteSpace(gameDirectory))
                 return 10;
 
-            return SyncRunner.PostLoad(gameDirectory);
+            return (_runner ?? new SyncRunner()).PostLoad(gameDirectory);
         }
         catch (Exception ex)
         {

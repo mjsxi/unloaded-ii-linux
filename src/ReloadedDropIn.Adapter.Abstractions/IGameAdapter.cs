@@ -27,8 +27,6 @@ public interface IGameAdapter
     /// </summary>
     IReadOnlyList<string> GetDisposableModStatePaths(AdapterContext context) => [];
 
-    Task BeforeGenerateConfigurationAsync(AdapterContext context, CancellationToken cancellationToken);
-
     /// <summary>
     /// Pre-load, after configuration generation: adapter work that needs the final
     /// enabled-mod list but must run before any mod hooks exist (e.g. mirroring

@@ -11,9 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Reloaded.Mod.Interfaces" Version="2.5.0" ExcludeAssets="runtime" />
-    <PackageReference Include="Reloaded.SharedLib.Hooks" Version="1.9.0" ExcludeAssets="runtime" />
-    <PackageReference Include="Reloaded.Imgui.Hook.Direct3D11" Version="1.0.2" />
+    <PackageReference Include="Reloaded.Mod.Interfaces" ExcludeAssets="runtime" />
+    <PackageReference Include="Reloaded.SharedLib.Hooks" ExcludeAssets="runtime" />
+    <PackageReference Include="Reloaded.Imgui.Hook.Direct3D11" />
   </ItemGroup>
 
   <ItemGroup>

@@ -119,9 +119,6 @@ public sealed class FfxviAdapter : IGameAdapter
     public IReadOnlyList<string> GetDisposableModStatePaths(AdapterContext context) =>
         FindDiffPacs(context);
 
-    public Task BeforeGenerateConfigurationAsync(AdapterContext context, CancellationToken cancellationToken) =>
-        Task.CompletedTask;
-
     public Task<IReadOnlyList<string>> AfterGenerateConfigurationAsync(
         AdapterContext context, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>([]);

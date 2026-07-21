@@ -26,8 +26,18 @@ public sealed class OverlayUi(
     private bool _pendingRelaunchChanges;
     private string? _lastSaveError;
 
+    // Self-update download state (touched from the render thread + bg thread).
+    private volatile int _downloadState; // 0=idle, 1=downloading, 2=done, 3=error
+    private string _downloadStatus = "";
+
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("shell32.dll")]
+    private static extern int SHGetKnownFolderPath(
+        [MarshalAs(UnmanagedType.LPStruct)] Guid rfid, uint dwFlags, IntPtr hToken, out IntPtr pszPath);
+
+    private static readonly Guid FolderDownloads = new("374DE290-123F-4565-9164-39C4925E467B");
 
     private string DisplayVersion => _catalog.DropInVersion.EndsWith("-dev")
         ? _catalog.DropInVersion[..^4]
@@ -65,6 +75,7 @@ public sealed class OverlayUi(
         }
 
         _imgui.Text($"Mods folder: {Path.Combine(gameDirectory, "mods")}");
+        RenderUpdateBanner();
         if (_lastSaveError is not null)
             _imgui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f),
                 $"SAVE FAILED - change will NOT apply: {_lastSaveError}");
@@ -159,7 +170,9 @@ public sealed class OverlayUi(
             {
                 // Integer-valued field: keep it integral so mods with int
                 // config properties can still deserialize the file.
-                var intValue = (int)longValue;
+                // Clamp to int range: InputInt uses a 32-bit ref, and mod
+                // configs with large longs would silently truncate otherwise.
+                var intValue = (int)Math.Clamp(longValue, int.MinValue, int.MaxValue);
                 if (_imgui.InputInt(property.Key, ref intValue))
                 {
                     config[property.Key] = (long)intValue;
@@ -168,6 +181,8 @@ public sealed class OverlayUi(
             }
             else if (value.TryGetValue<double>(out var numberValue))
             {
+                // Floating-point field (also catches JSON numbers like 1.5
+                // that don't match the long branch above).
                 if (_imgui.InputDouble(property.Key, ref numberValue))
                 {
                     config[property.Key] = numberValue;
@@ -194,6 +209,95 @@ public sealed class OverlayUi(
             Save(() => _catalog.SaveConfig(mod), $"config for {mod.ModId}");
 
         _imgui.Unindent(16);
+    }
+
+    /// <summary>
+    /// Banner shown when the sync pass found a newer release on GitHub.
+    /// Offers a one-click download to the user's Downloads folder.
+    /// </summary>
+    private void RenderUpdateBanner()
+    {
+        if (!_catalog.UpdateAvailable || _catalog.UpdateDownloadUrl is null)
+            return;
+
+        _imgui.TextColored(new Vector4(0.3f, 1f, 0.3f, 1f),
+            $"Update available: v{_catalog.LatestVersion} (you have v{DisplayVersion})");
+        _imgui.SameLine(0, 12);
+
+        switch (_downloadState)
+        {
+            case 0: // idle
+                if (_imgui.SmallButton("Download"))
+                    StartDownload(_catalog.UpdateDownloadUrl, _catalog.LatestVersion!);
+                break;
+            case 1: // downloading
+                _imgui.TextDisabled("downloading...");
+                break;
+            case 2: // done
+                _imgui.TextColored(new Vector4(0.3f, 1f, 0.3f, 1f), _downloadStatus);
+                break;
+            case 3: // error
+                _imgui.TextColored(new Vector4(1f, 0.3f, 0.3f, 1f), _downloadStatus);
+                _imgui.SameLine(0, 12);
+                if (_imgui.SmallButton("Retry"))
+                    StartDownload(_catalog.UpdateDownloadUrl, _catalog.LatestVersion!);
+                break;
+        }
+    }
+
+    private void StartDownload(string url, string version)
+    {
+        _downloadState = 1;
+        _downloadStatus = "";
+        var fileName = $"unloaded-ii-{version}.zip";
+
+        Task.Run(async () =>
+        {
+            try
+            {
+                var downloadsDir = GetDownloadsFolder();
+                Directory.CreateDirectory(downloadsDir);
+                var destPath = Path.Combine(downloadsDir, fileName);
+
+                using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("Unloaded-II-DropIn");
+                var bytes = await http.GetByteArrayAsync(url).ConfigureAwait(false);
+                await File.WriteAllBytesAsync(destPath, bytes).ConfigureAwait(false);
+
+                _downloadStatus = $"saved to {destPath}";
+                _downloadState = 2;
+                log($"downloaded update: {destPath}");
+            }
+            catch (Exception ex)
+            {
+                _downloadStatus = $"download failed: {ex.Message}";
+                _downloadState = 3;
+                log($"update download failed: {ex.Message}");
+            }
+        });
+    }
+
+    private static string GetDownloadsFolder()
+    {
+        try
+        {
+            if (SHGetKnownFolderPath(FolderDownloads, 0, IntPtr.Zero, out var pathPtr) == 0)
+            {
+                var path = Marshal.PtrToStringUni(pathPtr);
+                Marshal.FreeCoTaskMem(pathPtr);
+                if (!string.IsNullOrEmpty(path))
+                    return path;
+            }
+        }
+        catch
+        {
+            // Fall through to the manual path.
+        }
+
+        // Fallback: under Wine/Proton the Windows user profile maps to the
+        // Linux home, so ~/Downloads is almost always correct.
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     }
 
     /// <summary>

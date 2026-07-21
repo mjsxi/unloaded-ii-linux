@@ -110,9 +110,6 @@ public sealed class GbfrAdapter : IGameAdapter
         ];
     }
 
-    public Task BeforeGenerateConfigurationAsync(AdapterContext context, CancellationToken cancellationToken) =>
-        Task.CompletedTask;
-
     /// <summary>
     /// Pre-load, after the enabled-mod config is written: full mirror reconcile
     /// (copies and deletions) while no file-redirect hooks exist yet.
@@ -134,14 +131,15 @@ public sealed class GbfrAdapter : IGameAdapter
     }
 
     /// <summary>
-    /// Resolves enabled mod IDs to their actual directories via a scan — mod
-    /// folder names routinely differ from their ModConfig ModId.
+    /// Resolves enabled mod IDs to their actual directories via the cached scan —
+    /// mod folder names routinely differ from their ModConfig ModId.
     /// </summary>
     private IReadOnlyList<GbfrDataMirror.MirrorSource> ResolveMirrorSources(AdapterContext context)
     {
-        var directoryByModId = new Core.Discovery.ModScanner()
-            .Scan(context.ModsDirectory).Mods
-            .ToDictionary(m => m.ModId, m => m.Directory, StringComparer.OrdinalIgnoreCase);
+        var directoryByModId = context.ModDirectories
+            ?? new Core.Discovery.ModScanner()
+                .Scan(context.ModsDirectory).Mods
+                .ToDictionary(m => m.ModId, m => m.Directory, StringComparer.OrdinalIgnoreCase);
 
         return ReadEnabledMods(context)
             .Where(directoryByModId.ContainsKey)
@@ -227,6 +225,10 @@ public sealed class GbfrAdapter : IGameAdapter
     /// </summary>
     private static string FindUtilityManagerDirectory(AdapterContext context)
     {
+        if (context.ModDirectories is not null &&
+            context.ModDirectories.TryGetValue(UtilityManagerModId, out var dir))
+            return dir;
+
         var mod = new Core.Discovery.ModScanner().Scan(context.ModsDirectory).Mods
             .FirstOrDefault(m => m.ModId.Equals(UtilityManagerModId, StringComparison.OrdinalIgnoreCase));
         return mod?.Directory ?? Path.Combine(context.ModsDirectory, UtilityManagerModId);

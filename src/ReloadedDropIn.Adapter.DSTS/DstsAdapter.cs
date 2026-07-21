@@ -129,9 +129,6 @@ public sealed class DstsAdapter : IGameAdapter
     /// <summary>All redirection happens at runtime; nothing persists on disk.</summary>
     public IReadOnlyList<string> GetDisposableModStatePaths(AdapterContext context) => [];
 
-    public Task BeforeGenerateConfigurationAsync(AdapterContext context, CancellationToken cancellationToken) =>
-        Task.CompletedTask;
-
     public Task<IReadOnlyList<string>> AfterGenerateConfigurationAsync(
         AdapterContext context, CancellationToken cancellationToken) =>
         Task.FromResult<IReadOnlyList<string>>([]);

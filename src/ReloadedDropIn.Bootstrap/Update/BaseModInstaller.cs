@@ -87,10 +87,18 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
         var log = new List<string>();
         try
         {
+            // Scan once and build a lookup; FindInstalledDirectory used to
+            // re-enumerate mods/ per required mod.
+            var modDirectories = context.ModDirectories
+                ?? new Core.Discovery.ModScanner().Scan(context.ModsDirectory).Mods
+                    .ToDictionary(m => m.ModId, m => m.Directory, StringComparer.OrdinalIgnoreCase);
+
             var installable = requiredMods
                 .Where(m => m.UpdateRepo is not null && m.UpdateAssetPrefix is not null)
                 .ToList();
-            var missing = installable.Where(m => FindInstalledDirectory(m.Id) is null).ToList();
+            var missing = installable
+                .Where(m => !modDirectories.ContainsKey(m.Id))
+                .ToList();
             var settings = UpdateSettings.Load(context.DropInDirectory);
             var updatesDue = settings.AutoUpdate &&
                 DateTime.UtcNow - settings.LastCheckedUtc >= TimeSpan.FromHours(Math.Max(settings.CheckIntervalHours, 1));
@@ -122,7 +130,7 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
 
             foreach (var mod in toProcess)
             {
-                var line = await UpdateOneAsync(mod, cancellationToken).ConfigureAwait(false);
+                var line = await UpdateOneAsync(mod, modDirectories, cancellationToken).ConfigureAwait(false);
                 log.Add(line);
                 if (line.EndsWith("(offline?)", StringComparison.Ordinal))
                 {
@@ -139,7 +147,8 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
         return log;
     }
 
-    private async Task<string> UpdateOneAsync(RequiredMod mod, CancellationToken cancellationToken)
+    private async Task<string> UpdateOneAsync(
+        RequiredMod mod, IReadOnlyDictionary<string, string> modDirectories, CancellationToken cancellationToken)
     {
         var assets = await feed.GetLatestReleaseAssetsAsync(mod.UpdateRepo!, cancellationToken).ConfigureAwait(false);
         if (assets is null)
@@ -153,7 +162,7 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
         if (candidate.Asset is null)
             return $"{mod.Id}: latest release has no asset matching '{mod.UpdateAssetPrefix}<version>'";
 
-        var installedDirectory = FindInstalledDirectory(mod.Id);
+        modDirectories.TryGetValue(mod.Id, out var installedDirectory);
         var installedVersion = ReadInstalledVersion(installedDirectory);
         if (installedVersion is not null && candidate.Version <= installedVersion)
             return $"{mod.Id}: up to date ({Fmt(installedVersion)})";
@@ -224,12 +233,6 @@ public sealed class BaseModInstaller(AdapterContext context, IReleaseFeed feed)
             return $"{modId}: update to {Fmt(toVersion)} failed ({ex.Message}); keeping installed version";
         }
     }
-
-    /// <summary>The mod's current folder anywhere under mods/ (folder names
-    /// routinely differ from ModIds), or null when not installed.</summary>
-    private string? FindInstalledDirectory(string modId) =>
-        new Core.Discovery.ModScanner().Scan(context.ModsDirectory).Mods
-            .FirstOrDefault(m => m.ModId.Equals(modId, StringComparison.OrdinalIgnoreCase))?.Directory;
 
     private static Version? ReadInstalledVersion(string? modDirectory)
     {

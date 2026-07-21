@@ -38,7 +38,7 @@ public class SyncRunnerTests : IDisposable
     {
         CreateFakeRelinkInstall();
 
-        var result = SyncRunner.Run(GameDir);
+        var result = new SyncRunner().Run(GameDir);
 
         Assert.Equal(0, result);
 
@@ -79,7 +79,8 @@ public class SyncRunnerTests : IDisposable
         _temp.CreateMod("game/mods/_base-mods/gbfrelink.utility.manager", "gbfrelink.utility.manager");
         _temp.CreateMod("game/mods/UserMod", "user.mod");
 
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        var runner = new SyncRunner();
+        Assert.Equal(0, runner.Run(GameDir));
 
         // Reloaded creates conversion output after pre-load sync, in the
         // *nested* utility manager's temp dir, before PostLoad mirrors it.
@@ -88,7 +89,7 @@ public class SyncRunnerTests : IDisposable
         Directory.CreateDirectory(tempOut);
         File.WriteAllText(Path.Combine(tempOut, "x.msg"), "converted");
 
-        Assert.Equal(0, SyncRunner.PostLoad(GameDir));
+        Assert.Equal(0, runner.PostLoad(GameDir));
 
         var appConfigPath = Path.Combine(
             GameDir, "reloaded-dropin", "generated", "Apps", "granblue_fantasy_relink.exe", "AppConfig.json");
@@ -109,7 +110,7 @@ public class SyncRunnerTests : IDisposable
         new ReloadedDropIn.Core.Configuration.OverlayOverrides { DisabledMods = ["user.mod"] }
             .Save(Path.Combine(GameDir, "reloaded-dropin"));
 
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        Assert.Equal(0, new SyncRunner().Run(GameDir));
 
         var appConfigPath = Path.Combine(
             GameDir, "reloaded-dropin", "generated", "Apps", "granblue_fantasy_relink.exe", "AppConfig.json");
@@ -134,7 +135,7 @@ public class SyncRunnerTests : IDisposable
         _temp.CreateMod("game/mods/SwapMod", "swap.mod", dependencies: ["gbfrelink.utility.manager"]);
         _temp.CreateMod("game/mods/Standalone", "standalone.mod");
 
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        Assert.Equal(0, new SyncRunner().Run(GameDir));
 
         var appConfigPath = Path.Combine(
             GameDir, "reloaded-dropin", "generated", "Apps", "granblue_fantasy_relink.exe", "AppConfig.json");
@@ -157,8 +158,9 @@ public class SyncRunnerTests : IDisposable
         _temp.CreateMod("game/mods/_base-mods/p5rpc.modloader", "p5rpc.modloader");
         _temp.CreateMod("game/mods/CostumeMod", "user.costume", dependencies: ["p5rpc.modloader"]);
 
-        Assert.Equal(0, SyncRunner.Run(GameDir));
-        Assert.Equal(0, SyncRunner.PostLoad(GameDir));
+        var runner = new SyncRunner();
+        Assert.Equal(0, runner.Run(GameDir));
+        Assert.Equal(0, runner.PostLoad(GameDir));
 
         var appConfigPath = Path.Combine(
             GameDir, "reloaded-dropin", "generated", "Apps", "p5r.exe", "AppConfig.json");
@@ -177,7 +179,7 @@ public class SyncRunnerTests : IDisposable
     {
         Directory.CreateDirectory(GameDir);
 
-        var result = SyncRunner.Run(GameDir);
+        var result = new SyncRunner().Run(GameDir);
 
         Assert.Equal(2, result);
         Assert.False(File.Exists(Path.Combine(_temp.Path, "appdata", "Reloaded-Mod-Loader-II", "ReloadedII.json")));
@@ -189,7 +191,7 @@ public class SyncRunnerTests : IDisposable
         CreateFakeRelinkInstall();
         File.Delete(Path.Combine(GameDir, "data.i"));
 
-        var result = SyncRunner.Run(GameDir);
+        var result = new SyncRunner().Run(GameDir);
 
         Assert.Equal(3, result);
         Assert.False(File.Exists(Path.Combine(_temp.Path, "appdata", "Reloaded-Mod-Loader-II", "ReloadedII.json")));

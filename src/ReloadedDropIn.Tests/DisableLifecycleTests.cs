@@ -52,7 +52,8 @@ public class DisableLifecycleTests : IDisposable
         File.WriteAllText(rawFile, "modded-model");
 
         // ---- Launch 1: mod enabled and fully applied. ----
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        var launch1 = new SyncRunner();
+        Assert.Equal(0, launch1.Run(GameDir));
 
         // The utility manager "rebuilds" its index during mod load (fresh mtime).
         var moddedIndex = Path.Combine(UtilityDir, "temp", "data.i");
@@ -63,7 +64,7 @@ public class DisableLifecycleTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(conversion)!);
         File.WriteAllText(conversion, "converted");
 
-        Assert.Equal(0, SyncRunner.PostLoad(GameDir));
+        Assert.Equal(0, launch1.PostLoad(GameDir));
 
         Assert.Contains("cool.swap", ReadEnabledMods());
         Assert.Equal("modded-index-with-cool-swap", File.ReadAllText(Path.Combine(GameDir, "data.i")));
@@ -75,10 +76,11 @@ public class DisableLifecycleTests : IDisposable
             .Save(Path.Combine(GameDir, "reloaded-dropin"));
 
         // ---- Launch 2: no trace of the mod may survive. ----
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        var launch2 = new SyncRunner();
+        Assert.Equal(0, launch2.Run(GameDir));
         // Utility manager loads with no gbfr mods: temp/data.i is NOT rebuilt
         // this launch (stale file from launch 1 still present).
-        Assert.Equal(0, SyncRunner.PostLoad(GameDir));
+        Assert.Equal(0, launch2.PostLoad(GameDir));
 
         Assert.DoesNotContain("cool.swap", ReadEnabledMods());
         Assert.Equal("pristine-index", File.ReadAllText(Path.Combine(GameDir, "data.i")));
@@ -103,15 +105,16 @@ public class DisableLifecycleTests : IDisposable
         // Disabled from the start…
         new OverlayOverrides { DisabledMods = ["cool.swap"] }
             .Save(Path.Combine(GameDir, "reloaded-dropin"));
-        Assert.Equal(0, SyncRunner.Run(GameDir));
-        Assert.Equal(0, SyncRunner.PostLoad(GameDir));
+        var launch1 = new SyncRunner();
+        Assert.Equal(0, launch1.Run(GameDir));
+        Assert.Equal(0, launch1.PostLoad(GameDir));
         Assert.DoesNotContain("cool.swap", ReadEnabledMods());
         Assert.False(File.Exists(Path.Combine(GameDir, "data", "model", "swap.bin")));
 
         // …then re-enabled.
         new OverlayOverrides { DisabledMods = [] }
             .Save(Path.Combine(GameDir, "reloaded-dropin"));
-        Assert.Equal(0, SyncRunner.Run(GameDir));
+        Assert.Equal(0, new SyncRunner().Run(GameDir));
 
         Assert.Contains("cool.swap", ReadEnabledMods());
         Assert.Equal("modded-model", File.ReadAllText(Path.Combine(GameDir, "data", "model", "swap.bin")));

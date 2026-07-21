@@ -22,6 +22,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/* Windows' MAX_PATH (260) is too short for deep mods/ trees or long user
+   profiles. 4096 covers all realistic Steam library paths without needing
+   the \\?\ extended-length prefix. */
+#define DROPIN_MAX_PATH 4096
+
 /* ------------------------------------------------------------------ */
 /* hostfxr ABI (stable, documented in dotnet/runtime native hosting)   */
 /* ------------------------------------------------------------------ */
@@ -63,8 +68,8 @@ typedef struct EntryPointParameters
 /* ------------------------------------------------------------------ */
 
 static HMODULE g_module;
-static wchar_t g_module_path[MAX_PATH];
-static wchar_t g_game_dir[MAX_PATH];
+static wchar_t g_module_path[DROPIN_MAX_PATH];
+static wchar_t g_game_dir[DROPIN_MAX_PATH];
 static FILE *g_log;
 
 /* Entry-point hold state (see hold_game_at_entry). */
@@ -102,7 +107,7 @@ static void __cdecl hostfxr_error_to_log(const wchar_t *message)
 
 static void path_combine(wchar_t *destination, const wchar_t *base, const wchar_t *relative)
 {
-    swprintf(destination, MAX_PATH, L"%ls\\%ls", base, relative);
+    swprintf(destination, DROPIN_MAX_PATH, L"%ls\\%ls", base, relative);
 }
 
 static int make_directory(const wchar_t *path)
@@ -119,10 +124,10 @@ static int file_exists(const wchar_t *path)
 /* Finds reloaded-dropin\runtime\host\fxr\<version>\hostfxr.dll */
 static int find_hostfxr(wchar_t *hostfxr_path)
 {
-    wchar_t fxr_root[MAX_PATH];
+    wchar_t fxr_root[DROPIN_MAX_PATH];
     path_combine(fxr_root, g_game_dir, L"reloaded-dropin\\runtime\\host\\fxr");
 
-    wchar_t pattern[MAX_PATH];
+    wchar_t pattern[DROPIN_MAX_PATH];
     path_combine(pattern, fxr_root, L"*");
 
     WIN32_FIND_DATAW entry;
@@ -138,7 +143,7 @@ static int find_hostfxr(wchar_t *hostfxr_path)
         if (entry.cFileName[0] == L'.')
             continue;
 
-        swprintf(hostfxr_path, MAX_PATH, L"%ls\\%ls\\hostfxr.dll", fxr_root, entry.cFileName);
+        swprintf(hostfxr_path, DROPIN_MAX_PATH, L"%ls\\%ls\\hostfxr.dll", fxr_root, entry.cFileName);
         if (file_exists(hostfxr_path))
         {
             found = 1;
@@ -257,7 +262,7 @@ static void bootstrap(void)
 {
 
     /* Resolve where we are; the .asi sits in the game root. */
-    if (!GetModuleFileNameW(g_module, g_module_path, MAX_PATH))
+    if (!GetModuleFileNameW(g_module, g_module_path, DROPIN_MAX_PATH))
         return;
 
     lstrcpyW(g_game_dir, g_module_path);
@@ -267,7 +272,7 @@ static void bootstrap(void)
     *last_slash = L'\0';
 
     /* First-run directory layout + logging. */
-    wchar_t path[MAX_PATH];
+    wchar_t path[DROPIN_MAX_PATH];
     path_combine(path, g_game_dir, L"mods");
     make_directory(path);
     path_combine(path, g_game_dir, L"reloaded-dropin");
@@ -290,7 +295,7 @@ static void bootstrap(void)
     }
 
     /* Host the bundled .NET runtime. */
-    wchar_t hostfxr_path[MAX_PATH];
+    wchar_t hostfxr_path[DROPIN_MAX_PATH];
     if (!find_hostfxr(hostfxr_path))
     {
         log_line("ERROR: hostfxr.dll not found under reloaded-dropin\\runtime\\host\\fxr; is the runtime bundled?");
@@ -323,7 +328,7 @@ static void bootstrap(void)
         set_error_writer(hostfxr_error_to_log);
 
     /* Initialize against the Reloaded loader's runtimeconfig, exactly like stock. */
-    wchar_t runtime_config[MAX_PATH];
+    wchar_t runtime_config[DROPIN_MAX_PATH];
     path_combine(runtime_config, g_game_dir, L"reloaded-dropin\\loader\\Reloaded.Mod.Loader.runtimeconfig.json");
     if (!file_exists(runtime_config))
     {
@@ -351,7 +356,7 @@ static void bootstrap(void)
     log_line("CoreCLR hosted");
 
     /* Step 1: run our managed sync — mods/ scan + config generation. */
-    wchar_t sync_assembly[MAX_PATH];
+    wchar_t sync_assembly[DROPIN_MAX_PATH];
     path_combine(sync_assembly, g_game_dir, L"reloaded-dropin\\bootstrap\\ReloadedDropIn.Bootstrap.dll");
     if (!file_exists(sync_assembly))
     {
@@ -381,7 +386,7 @@ static void bootstrap(void)
     log_line("managed sync complete");
 
     /* Step 2: chain-load Reloaded's loader with the stock EntryPoint contract. */
-    wchar_t loader_dll[MAX_PATH];
+    wchar_t loader_dll[DROPIN_MAX_PATH];
     path_combine(loader_dll, g_game_dir, L"reloaded-dropin\\loader\\Reloaded.Mod.Loader.dll");
     if (!file_exists(loader_dll))
     {

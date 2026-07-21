@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using ReloadedDropIn.Adapter.Abstractions;
 using ReloadedDropIn.Adapter.GBFR;
 using ReloadedDropIn.Core.Configuration;
@@ -11,12 +12,12 @@ namespace ReloadedDropIn.Bootstrap;
 /// The in-process sync pipeline: runs inside the game (under the proxy/.asi)
 /// before Reloaded's loader starts, so configuration is always fresh.
 /// </summary>
-public static class SyncRunner
+public sealed class SyncRunner
 {
     /// <summary>When this launch's sync started; freshness gate for the post-load step.</summary>
-    private static DateTime _launchStartedUtc = DateTime.MinValue;
+    private DateTime _launchStartedUtc = DateTime.MinValue;
 
-    public static int Run(string gameDirectory)
+    public int Run(string gameDirectory)
     {
         _launchStartedUtc = DateTime.UtcNow;
         var context = new AdapterContext
@@ -31,6 +32,8 @@ public static class SyncRunner
         var log = new StringBuilder();
         void Log(string message) => log.AppendLine($"[{DateTime.Now:HH:mm:ss.fff}] {message}");
         IGameAdapter? detectedAdapter = null;
+        string[] lastEnabledMods = [];
+        var exitCode = 1;
 
         try
         {
@@ -60,22 +63,43 @@ public static class SyncRunner
             // authors' official releases on first launch and keep them current
             // after that. Tests opt out via env var (mirrors the
             // RELOADED_DROPIN_APPDATA override).
+            //
+            // All network work shares a single deadline: an offline box with
+            // multiple required mods would otherwise pay N × DNS timeout while
+            // the game sits frozen at its entry point.
             var updatesEnabled = Environment.GetEnvironmentVariable("RELOADED_DROPIN_DISABLE_UPDATE") is null;
             var faithDx12Ready = true;
             if (updatesEnabled)
             {
-                using var feed = new Update.GitHubReleaseFeed();
-                var updater = new Update.BaseModInstaller(context, feed);
-                foreach (var line in updater.RunAsync(adapter.GetRequiredMods(), CancellationToken.None).GetAwaiter().GetResult())
-                    Log($"update: {line}");
-
-                if (adapter is Adapter.FFXVI.FfxviAdapter)
+                using var networkDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                try
                 {
-                    var patch = new Update.FaithDx12PatchInstaller(context, feed)
-                        .RunAsync(allowNetwork: true, CancellationToken.None).GetAwaiter().GetResult();
-                    faithDx12Ready = patch.Ready;
-                    foreach (var line in patch.Log)
-                        Log($"ffxvi-patch: {line}");
+                    using var feed = new Update.GitHubReleaseFeed(
+                        Path.Combine(context.DropInDirectory, "state"));
+                    var updater = new Update.BaseModInstaller(context, feed);
+                    foreach (var line in updater.RunAsync(adapter.GetRequiredMods(), networkDeadline.Token).GetAwaiter().GetResult())
+                        Log($"update: {line}");
+
+                    if (adapter is Adapter.FFXVI.FfxviAdapter)
+                    {
+                        var patch = new Update.FaithDx12PatchInstaller(context, feed)
+                            .RunAsync(allowNetwork: true, networkDeadline.Token).GetAwaiter().GetResult();
+                        faithDx12Ready = patch.Ready;
+                        foreach (var line in patch.Log)
+                            Log($"ffxvi-patch: {line}");
+                    }
+
+                    // Check for a newer drop-in release so the overlay can
+                    // show an update banner + download button.
+                    using var updateHttp = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+                    updateHttp.DefaultRequestHeaders.UserAgent.ParseAdd("Unloaded-II-DropIn");
+                    foreach (var line in new Update.SelfUpdateChecker(context.DropInDirectory)
+                        .CheckAsync(updateHttp, networkDeadline.Token).GetAwaiter().GetResult())
+                        Log(line);
+                }
+                catch (OperationCanceledException)
+                {
+                    Log("[Warning] network deadline exceeded; continuing with installed versions (missing mods retry next launch)");
                 }
             }
             else if (adapter is Adapter.FFXVI.FfxviAdapter)
@@ -99,6 +123,10 @@ public static class SyncRunner
             foreach (var issue in scan.Issues)
                 Log($"ignored: {issue.Path} — {issue.Reason}");
             Log($"discovered {scan.Mods.Count} mod(s): {string.Join(", ", scan.Mods.Select(m => m.ModId))}");
+
+            // Cache the scan so adapters and installers don't re-enumerate mods/.
+            context.ModDirectories = scan.Mods
+                .ToDictionary(m => m.ModId, m => m.Directory, StringComparer.OrdinalIgnoreCase);
 
             IReadOnlyList<DiscoveredMod> usableMods = scan.Mods;
             if (!faithDx12Ready)
@@ -164,6 +192,7 @@ public static class SyncRunner
             var changed = new ConfigGenerator().Apply(plan);
             Log($"{(changed ? "wrote" : "unchanged")} {plan.TargetPath}");
             Log($"enabled mods ({plan.EnabledMods.Length}): {string.Join(", ", plan.EnabledMods)}");
+            lastEnabledMods = plan.EnabledMods;
 
             // A removed/toggled mod can leave loader-owned merged or converted
             // files behind even though AppConfig is now correct. Invalidate only
@@ -180,6 +209,7 @@ public static class SyncRunner
                 Log($"mirror: {line}");
 
             Log("sync complete");
+            exitCode = 0;
             return 0;
         }
         catch (Exception ex)
@@ -207,6 +237,7 @@ public static class SyncRunner
         finally
         {
             File.WriteAllText(Path.Combine(context.LogsDirectory, "sync.log"), log.ToString());
+            WriteLastSyncStatus(context, detectedAdapter?.Id, lastEnabledMods, exitCode);
         }
     }
 
@@ -214,7 +245,7 @@ public static class SyncRunner
     /// Post-load step: invoked by the .asi after Reloaded initialized, while the
     /// game is still frozen at its entry point. Appends to sync.log.
     /// </summary>
-    public static int PostLoad(string gameDirectory)
+    public int PostLoad(string gameDirectory)
     {
         var context = new AdapterContext
         {
@@ -252,6 +283,34 @@ public static class SyncRunner
         finally
         {
             File.AppendAllText(Path.Combine(context.LogsDirectory, "sync.log"), log.ToString());
+        }
+    }
+
+    /// <summary>
+    /// Machine-readable status for the diagnostics collector and overlay.
+    /// Written on every exit path (success, failure, or early abort).
+    /// </summary>
+    private static void WriteLastSyncStatus(
+        AdapterContext context, string? adapterId, string[] enabledMods, int exitCode)
+    {
+        try
+        {
+            var status = new
+            {
+                timestampUtc = DateTime.UtcNow.ToString("O"),
+                adapter = adapterId,
+                exitCode,
+                success = exitCode == 0,
+                modCount = enabledMods.Length,
+                enabledMods,
+            };
+            Core.Filesystem.AtomicFile.WriteAllText(
+                Path.Combine(context.DropInDirectory, "last-sync.json"),
+                JsonSerializer.Serialize(status, new JsonSerializerOptions { WriteIndented = true }) + "\n");
+        }
+        catch
+        {
+            // Status file is best-effort; never cost us the launch.
         }
     }
 

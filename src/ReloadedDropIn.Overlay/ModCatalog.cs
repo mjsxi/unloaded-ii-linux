@@ -44,12 +44,18 @@ public sealed class ModCatalog(string gameDirectory)
     /// <summary>Drop-in version from reloaded-dropin/version.json, for display.</summary>
     public string DropInVersion { get; private set; } = "dev";
 
+    /// <summary>Update info from reloaded-dropin/update-check.json (written by sync).</summary>
+    public bool UpdateAvailable { get; private set; }
+    public string? LatestVersion { get; private set; }
+    public string? UpdateDownloadUrl { get; private set; }
+
     public void Reload()
     {
         Mods.Clear();
         var overrides = OverlayOverrides.Load(DropInDirectory);
         HideWatermark = overrides.HideWatermark;
         DropInVersion = ReadDropInVersion();
+        ReadUpdateCheck();
         var scan = new ModScanner().Scan(ModsDirectory);
 
         foreach (var mod in scan.Mods)
@@ -128,6 +134,27 @@ public sealed class ModCatalog(string gameDirectory)
         catch (JsonException)
         {
             return null;
+        }
+    }
+
+    private void ReadUpdateCheck()
+    {
+        UpdateAvailable = false;
+        LatestVersion = null;
+        UpdateDownloadUrl = null;
+        try
+        {
+            var path = Path.Combine(DropInDirectory, "update-check.json");
+            if (!File.Exists(path))
+                return;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            UpdateAvailable = doc.RootElement.GetProperty("UpdateAvailable").GetBoolean();
+            LatestVersion = doc.RootElement.GetProperty("LatestVersion").GetString();
+            UpdateDownloadUrl = doc.RootElement.GetProperty("DownloadUrl").GetString();
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or IOException)
+        {
+            // Stale or corrupt file; no update banner.
         }
     }
 }

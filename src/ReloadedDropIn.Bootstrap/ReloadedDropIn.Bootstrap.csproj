@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <!-- Bundled-mod auto-update: GitHub releases ship .7z archives. -->
-    <PackageReference Include="SharpCompress" Version="1.0.0" />
+    <PackageReference Include="SharpCompress" />
   </ItemGroup>
 
   <PropertyGroup>

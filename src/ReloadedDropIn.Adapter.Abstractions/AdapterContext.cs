@@ -17,4 +17,11 @@ public sealed record AdapterContext
     public string GeneratedDirectory => Path.Combine(DropInDirectory, "generated");
     public string BackupsDirectory => Path.Combine(DropInDirectory, "backups");
     public string LogsDirectory => Path.Combine(DropInDirectory, "logs");
+
+    /// <summary>
+    /// Cached modId → directory lookup for this sync pass (case-insensitive).
+    /// Set by the bootstrap after scanning mods/; adapters and installers should
+    /// prefer this over re-scanning the filesystem.
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? ModDirectories { get; set; }
 }

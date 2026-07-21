@@ -4,9 +4,6 @@ obj/
 dist/
 *.user
 
-# Vendor clones are reference material, not committed
-vendor/
-
 # IDE
 .vs/
 .vscode/
@@ -32,3 +29,18 @@ logs/
 # User-generated diagnostic bundles
 dropin-diagnostics/
 dropin-diagnostics.zip
+
+# Upstream reference clones (their own git repos; not vendored)
+vendor/GBFRDataTools/
+vendor/Relink-Mod-Manager/
+vendor/RelinkModOrganizer/
+vendor/Reloaded-II/
+vendor/gbfrelink.utility.manager/
+# Example mods used for manual testing
+example-mod/
+vendor/FaithFramework/
+vendor/Reloaded.Imgui.Hook/
+vendor/Reloaded.Imgui.Hook-dx12-draft/
+
+# Separate patch repository cloned inside this working tree.
+dxd12-patch-files/
