@@ -18,6 +18,15 @@ elif [ -f "$SELF_DIR/reloaded-dropin.asi" ]; then
 else
   GAME_DIR="$HOME/.local/share/Steam/steamapps/common/Granblue Fantasy Relink"
 fi
+# Which game is this? Mirrors the adapters' ExecutableNames; picks the
+# game-specific probes below and the app id fallback.
+GAME_ID="unknown"
+if   [ -f "$GAME_DIR/granblue_fantasy_relink.exe" ]; then GAME_ID="gbfr"
+elif [ -f "$GAME_DIR/P5R.exe" ]; then GAME_ID="p5r"
+elif [ -f "$GAME_DIR/ffxvi.exe" ] || [ -f "$GAME_DIR/ffxvi_demo.exe" ]; then GAME_ID="ffxvi"
+elif [ -f "$GAME_DIR/Digimon Story Time Stranger.exe" ]; then GAME_ID="dsts"
+fi
+
 # game dir = <library>/steamapps/common/<game>; prefix lives at <library>/steamapps/compatdata/<appid>/pfx.
 # The app id is derived from the library's appmanifest that owns this install dir.
 STEAMAPPS="$(dirname "$(dirname "$GAME_DIR")")"
@@ -31,7 +40,18 @@ if [ -z "$APPID" ]; then
     fi
   done
 fi
-[ -n "$APPID" ] || { APPID="881020"; echo "WARNING: could not derive app id from appmanifests; assuming $APPID"; }
+# No appmanifest: fall back to the detected game's id, never another game's --
+# a wrong prefix means silently missing Proton logs.
+if [ -z "$APPID" ]; then
+  case "$GAME_ID" in
+    gbfr)  APPID="881020" ;;
+    p5r)   APPID="1687950" ;;
+    ffxvi) APPID="2515020" ;;
+    dsts)  APPID="1984270" ;;
+  esac
+  [ -n "$APPID" ] || echo "WARNING: could not derive app id; pass it as arg 2 to collect Proton logs"
+fi
+echo "game id:   $GAME_ID"
 echo "app id:    $APPID"
 PREFIX="$STEAMAPPS/compatdata/$APPID/pfx"
 RELOADED_APPDATA="$PREFIX/drive_c/users/steamuser/AppData/Roaming/Reloaded-Mod-Loader-II"
@@ -50,18 +70,35 @@ cp "$GAME_DIR/reloaded-dropin/update.json" "$OUT/" 2>/dev/null
 # ImGui's window-state file: its existence proves overlay frames actually ran.
 cp "$GAME_DIR/imgui.ini" "$OUT/" 2>/dev/null
 
-# Cross-launch bookkeeping: baseline hashes + mirror manifest (not the
-# data.i.orig backup itself — too big).
-cp "$GAME_DIR/reloaded-dropin/backups/gbfr/state.json" "$OUT/index-state.json" 2>/dev/null
-cp "$GAME_DIR/reloaded-dropin/backups/gbfr/mirror-manifest.json" "$OUT/" 2>/dev/null
+# Cross-launch bookkeeping: adapters keep state under backups/<adapter-id>/
+# (only GBFR does today). The data.i.orig backup itself is not copied — too big.
+for backup_dir in "$GAME_DIR"/reloaded-dropin/backups/*/; do
+  [ -d "$backup_dir" ] || continue
+  adapter_id="$(basename "$backup_dir")"
+  for state_file in state.json mirror-manifest.json; do
+    [ -f "$backup_dir/$state_file" ] && cp "$backup_dir/$state_file" "$OUT/${adapter_id}-${state_file}"
+  done
+done
+
+# State of the game files the stack rewrites on disk.
 {
-  echo "== sha256 =="
-  sha256sum "$GAME_DIR/data.i" "$GAME_DIR/reloaded-dropin/backups/gbfr/data.i.orig" 2>/dev/null
-  echo "== mtimes =="
-  stat -c '%y %n' "$GAME_DIR/data.i" "$GAME_DIR"/mods/*/gbfrelink.utility.manager/temp/data.i \
-      "$GAME_DIR"/mods/*/*/temp/data.i 2>/dev/null
-  echo "== now =="
-  date -u '+%Y-%m-%d %H:%M:%S UTC'
+  echo "== game: $GAME_ID"
+  echo "== now: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+  if [ "$GAME_ID" = "gbfr" ]; then
+    echo "== sha256 (live data.i vs pristine backup) =="
+    sha256sum "$GAME_DIR/data.i" "$GAME_DIR/reloaded-dropin/backups/gbfr/data.i.orig" 2>/dev/null
+    echo "== mtimes =="
+    # The utility manager may sit directly in mods/ or nested one level deeper;
+    # the patterns overlap, hence sort -u.
+    stat -c '%y %n' "$GAME_DIR/data.i" \
+        "$GAME_DIR"/mods/gbfrelink.utility.manager/temp/data.i \
+        "$GAME_DIR"/mods/*/gbfrelink.utility.manager/temp/data.i \
+        "$GAME_DIR"/mods/*/*/temp/data.i 2>/dev/null | sort -u
+  else
+    # Other games redirect at runtime and rewrite nothing, so there is no index
+    # to hash. DSTS archive state lives in mvgl-tree.txt.
+    echo "== no on-disk index state for $GAME_ID =="
+  fi
 } > "$OUT/index-hashes.txt"
 
 # Reloaded's own state: loader config + logs (the important part).
@@ -96,12 +133,55 @@ fi
 ls -la "$GAME_DIR" > "$OUT/game-root.txt" 2>/dev/null
 stat "$GAME_DIR/data.i" >> "$OUT/game-root.txt" 2>/dev/null
 
-# External-files folder the game reads modded content from — with mtimes,
-# so we can see WHICH launch wrote each file.
-find "$GAME_DIR/data" -type f -exec stat -c '%y %n' {} + 2>/dev/null \
-  | sed "s|$GAME_DIR/||" > "$OUT/data-tree.txt"
+# Media.Vision games (DSTS): MVGL.FileLoader recursively scans the whole game
+# directory for *.mvgl, keyed by filename up to the first dot, case-insensitive,
+# in a plain ToDictionary. Two archives sharing a stem abort the entire Reloaded
+# load ("same key already added. Key: <stem>") and the loader log names the key
+# but never the files. tolower() approximates .NET's OrdinalIgnoreCase.
+MVGL_LIST="$(find "$GAME_DIR" -type f -iname '*.mvgl' -printf '%P\n' 2>/dev/null | sort -f)"
+{
+  echo "== scan root: $GAME_DIR"
+  echo "== key = path basename up to the first dot, ASCII case-insensitive"
+  echo "== count: $([ -n "$MVGL_LIST" ] && printf '%s\n' "$MVGL_LIST" | wc -l | tr -d ' ' || echo 0)"
+  echo
+  echo "== all .mvgl (path relative to scan root)"
+  [ -n "$MVGL_LIST" ] && printf '%s\n' "$MVGL_LIST"
+  echo
+  # Keys are lowercased first fields, compared as literals (stems can hold regex
+  # metacharacters). Each key's paths are buffered and flushed on key change:
+  # sorting finished multi-line records would split a key from its own files.
+  echo "== colliding keys (each of these is fatal to the Reloaded load)"
+  MVGL_DUPS="$(printf '%s\n' "$MVGL_LIST" \
+    | awk -F/ 'NF { b=$NF; k=tolower(b); d=index(k,"."); if (d>0) k=substr(k,1,d-1); print k "\t" $0 }' \
+    | sort -f \
+    | awk -F'\t' 'function flush() { if (n > 1) { printf "KEY: %s (%d files)\n", k, n; for (i = 1; i <= n; i++) print "    " buf[i] } n = 0 } { if ($1 != k) flush(); k = $1; buf[++n] = $2 } END { flush() }')"
+  if [ -n "$MVGL_DUPS" ]; then printf '%s\n' "$MVGL_DUPS"; else echo "none"; fi
+} > "$OUT/mvgl-tree.txt"
 
-# Utility manager working state (it may live under mods/ or mods/_base-mods/).
+# Mod content the game reads at runtime, with mtimes so we can see WHICH launch
+# wrote each file. Listings are capped: a legacy unpacked-data folder can hold
+# tens of thousands of files.
+list_with_mtimes() {
+  local dir="$1" count
+  count="$(find "$dir" -type f 2>/dev/null | wc -l | tr -d ' ')"
+  echo "== ${dir#"$GAME_DIR"/} ($count files)"
+  find "$dir" -type f -exec stat -c '%y %n' {} + 2>/dev/null | sed "s|$GAME_DIR/||" | head -n 200
+  [ "$count" -gt 200 ] && echo "    ... truncated, $count total"
+}
+{
+  echo "== game: $GAME_ID"
+  # GBFR: data/ beside the exe. gamedata/: a legacy unpacker's output, not ours.
+  for content_dir in "$GAME_DIR/data" "$GAME_DIR/gamedata"; do
+    [ -d "$content_dir" ] && list_with_mtimes "$content_dir"
+  done
+  # MVGL FileLoader's MBE cache sits under its own mod folder; files there prove
+  # MbeProcessor got past its constructor, i.e. the duplicate-key crash is gone.
+  while IFS= read -r -d '' content_dir; do
+    list_with_mtimes "$content_dir"
+  done < <(find "$GAME_DIR/mods" -maxdepth 4 -type d -name cached -print0 2>/dev/null)
+} > "$OUT/data-tree.txt"
+
+# Utility manager working state (GBFR only; may live under mods/ or mods/_base-mods/).
 UM_DIR="$(find "$GAME_DIR/mods" -maxdepth 3 -type d -name 'gbfrelink.utility.manager' | head -1)"
 if [ -n "$UM_DIR" ]; then
   ls -laR "$UM_DIR/temp" "$UM_DIR/GBFR" > "$OUT/utility-manager-state.txt" 2>/dev/null
