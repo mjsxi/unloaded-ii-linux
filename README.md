@@ -112,7 +112,7 @@ Faith DX12 source, binary, and license live in the separate
 
 ## Reporting issues
 
-Run `./collect-diagnostics.sh` from the game directory (game closed) and
+Run `./extras/collect-diagnostics.sh` from the game directory (game closed) and
 attach the resulting `dropin-diagnostics.zip` to a
 [GitHub issue](https://github.com/mjsxi/unloaded-ii-linux/issues). For crashes,
 launch once with `PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%`

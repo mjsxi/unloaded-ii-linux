@@ -18,6 +18,10 @@
 #     loader/               Reloaded-II mod loader
 #     bootstrap/            our managed sync component
 #     logs/
+#   README.txt              install + troubleshooting doc
+#   extras/                 everything else: uninstall.sh, collect-diagnostics.sh,
+#                           licenses/, and the proxy markers uninstall.sh reads.
+#                           Both scripts resolve the game dir as their parent.
 #
 # Requires: dotnet (~/.dotnet ok), x86_64-w64-mingw32-gcc, 7zz, unzip, curl.
 set -euo pipefail
@@ -156,18 +160,22 @@ leave it alone. Everything else in here is yours to add and remove.
 EOF
 
 echo "==> user-facing docs, uninstaller, version metadata"
+# The package root stays minimal: README, proxy DLL, .asi, reloaded-dropin/, mods/.
+# Everything else -- docs, uninstaller, diagnostic collector -- lives in extras/.
+EXTRAS="$STAGE/extras"
+mkdir -p "$EXTRAS"
 cp "$ROOT/scripts/templates/README.txt" "$STAGE/README.txt"
-cp "$ROOT/scripts/templates/THIRD-PARTY-LICENSES.txt" "$STAGE/THIRD-PARTY-LICENSES.txt"
-cp -R "$ROOT/scripts/templates/licenses" "$STAGE/licenses"
-cp "$VENDOR/extracted/LICENSE.txt" "$STAGE/licenses/Reloaded-II-LICENSES.txt"
-cp "$ROOT/scripts/templates/uninstall.sh" "$STAGE/uninstall.sh"
-chmod +x "$STAGE/uninstall.sh"
-cp "$ROOT/scripts/collect-diagnostics.sh" "$STAGE/collect-diagnostics.sh"
-chmod +x "$STAGE/collect-diagnostics.sh"
+cp "$ROOT/scripts/templates/THIRD-PARTY-LICENSES.txt" "$EXTRAS/THIRD-PARTY-LICENSES.txt"
+cp -R "$ROOT/scripts/templates/licenses" "$EXTRAS/licenses"
+cp "$VENDOR/extracted/LICENSE.txt" "$EXTRAS/licenses/Reloaded-II-LICENSES.txt"
+cp "$ROOT/scripts/templates/uninstall.sh" "$EXTRAS/uninstall.sh"
+chmod +x "$EXTRAS/uninstall.sh"
+cp "$ROOT/scripts/collect-diagnostics.sh" "$EXTRAS/collect-diagnostics.sh"
+chmod +x "$EXTRAS/collect-diagnostics.sh"
 
 # Proxy hash lets uninstall.sh remove the proxy DLL only if it's ours.
-shasum -a 256 "$STAGE/$PROXY_NAME" | cut -d' ' -f1 > "$STAGE/.dropin-proxy-sha256"
-printf '%s\n' "$PROXY_NAME" > "$STAGE/.dropin-proxy-name"
+shasum -a 256 "$STAGE/$PROXY_NAME" | cut -d' ' -f1 > "$EXTRAS/.dropin-proxy-sha256"
+printf '%s\n' "$PROXY_NAME" > "$EXTRAS/.dropin-proxy-name"
 
 cat > "$STAGE/reloaded-dropin/version.json" <<EOF
 {

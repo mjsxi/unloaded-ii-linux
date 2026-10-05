@@ -3,8 +3,9 @@
 # reloaded-dropin logs, Reloaded loader logs from the Proton prefix,
 # generated configs, mod layout, and game-file state.
 #
-# This script ships in the drop-in package: run it from the game directory
-# (./collect-diagnostics.sh) and dropin-diagnostics.zip appears next to it.
+# This script ships in the drop-in package under extras/: run it from the game
+# directory (./extras/collect-diagnostics.sh) and dropin-diagnostics.zip appears
+# in the game directory.
 #
 # Usage: ./collect-diagnostics.sh [game-dir] [steam-app-id]
 set -uo pipefail
@@ -15,6 +16,10 @@ if [ -n "${1:-}" ]; then
 elif [ -f "$SELF_DIR/reloaded-dropin.asi" ]; then
   # Running from inside a drop-in game directory.
   GAME_DIR="$SELF_DIR"
+elif [ -f "$SELF_DIR/../reloaded-dropin.asi" ]; then
+  # Shipped under extras/, so the game directory is the parent. Without this the
+  # fallback below would silently collect from another game's folder.
+  GAME_DIR="$(cd "$SELF_DIR/.." && pwd)"
 else
   GAME_DIR="$HOME/.local/share/Steam/steamapps/common/Granblue Fantasy Relink"
 fi

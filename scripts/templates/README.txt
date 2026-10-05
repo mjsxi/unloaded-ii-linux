@@ -22,7 +22,8 @@ INSTALL (Linux / Steam Deck / Proton)
      reloaded-dropin.asi      <- from this archive
      reloaded-dropin/         <- from this archive
      mods/                    <- from this archive
-     uninstall.sh             <- from this archive
+     extras/                  <- from this archive (uninstaller, licenses,
+                                diagnostic collector)
 
 2. In Steam: right-click the game -> Properties -> Launch Options:
 
@@ -58,7 +59,7 @@ from mjsxi/dxd12-patch-files. This keeps Faith-based UI mods (such as combo
 meters) and the Unloaded-II mod-management panel on the same single renderer.
 Press INSERT to open the panel, or select Unloaded-II Panel from Faith's Mods
 menu.
-If the game or overlay fails, close the game and run collect-diagnostics.sh.
+If the game or overlay fails, close the game and run extras/collect-diagnostics.sh.
 
 PER-GAME NOTES
 --------------
@@ -121,14 +122,14 @@ what lets anyone actually fix the problem, so please include it.
 2. Open a terminal and run the collector by its full path (replace the
    path with wherever your game actually lives):
 
-     bash "/path/to/your/steamapps/common/<the game>/collect-diagnostics.sh"
+     bash "/path/to/your/steamapps/common/<the game>/extras/collect-diagnostics.sh"
 
    (If your terminal is already in the game's folder — the folder this
-   README is in — a plain  ./collect-diagnostics.sh  works too.)
+   README is in — a plain  ./extras/collect-diagnostics.sh  works too.)
 
    It gathers every relevant log and config into a dropin-diagnostics.zip
-   next to the script. It collects logs and mod lists only — no saves,
-   no personal data, no game files.
+   in the game folder, next to the executable. It collects logs and mod
+   lists only — no saves, no personal data, no game files.
 
 3. If the game CRASHES (closes without any error dialog), the crash
    happens below our logs, so first add Proton logging to the Steam
@@ -136,7 +137,7 @@ what lets anyone actually fix the problem, so please include it.
 
      PROTON_LOG=1 WINEDLLOVERRIDES="winmm=n,b" %command%
 
-   Launch once to reproduce the crash, run ./collect-diagnostics.sh
+   Launch once to reproduce the crash, run ./extras/collect-diagnostics.sh
    again (it picks up Proton's log automatically), then restore the
    normal launch option.
 
@@ -149,7 +150,7 @@ what lets anyone actually fix the problem, so please include it.
 
 UNINSTALL
 ---------
-Close the game and run:  ./uninstall.sh
+Close the game and run:  ./extras/uninstall.sh
 It restores every game file the drop-in changed (and removes any
 generated archives), returning the game to vanilla. Then remove the
 launch option from Steam properties.

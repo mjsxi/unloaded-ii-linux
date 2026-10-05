@@ -1,14 +1,26 @@
 #!/usr/bin/env bash
 # Reloaded Drop-In uninstaller.
 #
-# Run from the game directory (where this script was extracted) with the game
-# CLOSED. Restores every game file the drop-in changed, then removes the
-# drop-in's own files. Your mods/ folder is left in place — delete it yourself
-# if you no longer want it.
+# Run from wherever this script was extracted (extras/ in current packages).
+# With the game CLOSED: restores every game file the drop-in changed, then
+# removes the drop-in's own files. Your mods/ folder is left in place -- delete
+# it yourself if you no longer want it.
 set -uo pipefail
 
-GAME="$(cd "$(dirname "$0")" && pwd)"
+# The game directory is the folder holding reloaded-dropin.asi. This script ships
+# under extras/, so that is usually the parent; running it from the game root
+# (older layout, or after copying it out) still works.
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SELF_DIR/reloaded-dropin.asi" ]; then
+  GAME="$SELF_DIR"
+else
+  GAME="$(cd "$SELF_DIR/.." && pwd)"
+fi
 BACKUPS="$GAME/reloaded-dropin/backups/gbfr"
+# Marker files moved into extras/ alongside this script; 0.6.1 and earlier wrote
+# them to the game root, so both locations are read.
+MARKER_DIR="$SELF_DIR"
+[ -f "$SELF_DIR/.dropin-proxy-name" ] || MARKER_DIR="$GAME"
 
 echo "Uninstalling Reloaded Drop-In from: $GAME"
 [ -f "$GAME/reloaded-dropin.asi" ] || { echo "reloaded-dropin.asi not found here — run this from the game directory."; exit 1; }
@@ -78,9 +90,9 @@ fi
 #    the one we shipped (Ultimate ASI Loader) — never someone else's file.
 rm -f "$GAME/reloaded-dropin.asi"
 rm -rf "$GAME/reloaded-dropin"
-rm -f "$GAME/collect-diagnostics.sh" "$GAME/dropin-diagnostics.zip"
-want="$(cat "$GAME/.dropin-proxy-sha256" 2>/dev/null)"
-shipped_proxy="$(cat "$GAME/.dropin-proxy-name" 2>/dev/null)"
+rm -f "$GAME/collect-diagnostics.sh" "$SELF_DIR/collect-diagnostics.sh" "$GAME/dropin-diagnostics.zip"
+want="$(cat "$MARKER_DIR/.dropin-proxy-sha256" 2>/dev/null)"
+shipped_proxy="$(cat "$MARKER_DIR/.dropin-proxy-name" 2>/dev/null)"
 for proxy in winmm.dll dinput8.dll version.dll; do
   [ -f "$GAME/$proxy" ] || continue
   # New packages record the filename as well as the hash. This matters when a
@@ -100,6 +112,12 @@ for proxy in winmm.dll dinput8.dll version.dll; do
   fi
 done
 rm -f "$GAME/.dropin-proxy-sha256" "$GAME/.dropin-proxy-name"
+
+# extras/ holds this script and the licenses; last, so nothing else is read
+# after the running script's own directory is gone. Also drops an uninstall.sh
+# left at the game root by a 0.6.1 extract that 0.6.2 was upgraded over.
+rm -f "$SELF_DIR/uninstall.sh" "$GAME/uninstall.sh"
+rm -rf "$GAME/extras"
 
 echo
 echo "Done. Also remove the WINEDLLOVERRIDES launch option from the game's"
